@@ -27,7 +27,7 @@ const EVVM_ABI = [
       { name: 'priorityFee', type: 'uint256' },
       { name: 'nonce', type: 'uint256' },
       { name: 'priorityFlag', type: 'bool' },
-      { name: 'executor', type: 'string' },
+      { name: 'executor', type: 'address' },
       { name: 'signature', type: 'bytes' },
     ],
     outputs: [],
