@@ -33,7 +33,7 @@ const STAKING_ABI = [
     outputs: [{ type: 'uint256' }],
   },
   {
-    name: 'goldenFisher',
+    name: 'getGoldenFisher',
     type: 'function',
     stateMutability: 'view',
     inputs: [],
@@ -72,7 +72,7 @@ export function useGoldenStaking() {
   const { data: goldenFisherAddress, isLoading: isLoadingGoldenFisher } = useReadContract({
     address: STAKING_ADDRESS,
     abi: STAKING_ABI,
-    functionName: 'goldenFisher',
+    functionName: 'getGoldenFisher',
     query: {
       refetchOnWindowFocus: true,
       staleTime: 0,

@@ -63,7 +63,7 @@ const EVVM_ABI = [
 // Staking contract ABI
 const STAKING_ABI = [
   {
-    name: 'goldenFisher',
+    name: 'getGoldenFisher',
     type: 'function',
     stateMutability: 'view',
     inputs: [],
@@ -178,7 +178,7 @@ class FisherBot {
       const goldenFisherAddress = await this.publicClient.readContract({
         address: STAKING_ADDRESS,
         abi: STAKING_ABI,
-        functionName: 'goldenFisher',
+        functionName: 'getGoldenFisher',
       });
 
       return (goldenFisherAddress as string).toLowerCase() === this.account.address.toLowerCase();
