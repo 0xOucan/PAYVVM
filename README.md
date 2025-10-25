@@ -2,7 +2,7 @@
 
 > **A next-generation blockchain explorer and payment platform for the EVVM ecosystem**
 
-PAYVVM Explorer is a production-ready decentralized application that enables **gasless PYUSD payments**, real-time blockchain state monitoring, and comprehensive transaction tracking through innovative hybrid data architecture. Built on Scaffold-ETH 2 with advanced Web3 integrations.
+PAYVVM Explorer is a production-ready decentralized application that enables **gasless PYUSD and MATE token payments**, real-time blockchain state monitoring, and comprehensive transaction tracking through innovative hybrid data architecture. Built on Scaffold-ETH 2 with advanced Web3 integrations.
 
 [![Live on Sepolia](https://img.shields.io/badge/Live-Sepolia%20Testnet-blue)](https://sepolia.etherscan.io/address/0x9486f6C9d28ECdd95aba5bfa6188Bbc104d89C3e)
 [![EVVM ID](https://img.shields.io/badge/EVVM%20ID-1000-purple)](https://www.evvm.info/evvms/1000)
@@ -26,6 +26,23 @@ Send PYUSD tokens within the EVVM ecosystem **without paying gas fees**. Users s
 - Message includes recipient, amount, and nonce
 - Contract verifies signature and executes payment
 - Complete abstraction of blockchain complexity from users
+
+### 🎰 MATE Token Faucet & Payments
+Claim and send MATE tokens (EVVM's native protocol token) for username registration, priority fees, and network services.
+
+**Faucet Features:**
+- One-click token claiming on Sepolia testnet
+- Reward formula: **2.5 MATE × random(1-5083)**
+- Get 2.5 to 12,707.5 MATE tokens per claim
+- More than enough for username registration (500 MATE required)
+- Unlimited claims on testnet for development
+
+**Payment Features:**
+- Gasless MATE payments using EIP-191 signatures
+- Send MATE to any address within EVVM
+- Real-time balance display (18 decimal precision)
+- Priority fee options for faster execution
+- Auto-refresh after successful transactions
 
 ### 🚀 HyperSync-Powered Transaction History
 Query transaction history **2000x faster** than traditional RPC using [Envio HyperSync](https://docs.envio.dev/docs/HyperSync). No event logs required - works directly with transaction data.
@@ -73,7 +90,8 @@ Comprehensive integration with the entire EVVM ecosystem:
 | **Staking** | `0x64A4...6816` | Token staking & rewards |
 | **Treasury** | `0x3D6c...A38E` | Asset management & custody |
 | **Estimator** | `0x5dB7...2aB` | Reward calculations |
-| **PYUSD Token** | `0xCaC5...3bB9` | ERC-20 payment token |
+| **PYUSD Token** | `0xCaC5...3bB9` | ERC-20 payment token (6 decimals) |
+| **MATE Token** | `0x0000...0001` | EVVM native protocol token (18 decimals) |
 
 ---
 
@@ -230,25 +248,45 @@ The PAYVVM Explorer page combines all features in a unified interface:
 - Current Reward: MATE reward per transaction
 - Admin Address: System administrator
 
-**2. PYUSD Payment Center**
-- Send gasless payments with signature
-- Real-time balance display
-- Priority fee options for faster execution
-- Transaction status tracking with Etherscan links
-
-**3. Treasury Management**
+**2. Treasury Management**
 - **Deposit Tab**: Transfer PYUSD from wallet to EVVM
 - **Withdraw Tab**: Transfer PYUSD from EVVM to wallet
 - Automatic approval flow
 - Allowance tracking
 
-**4. Account Viewer**
+**3. PYUSD Payment Center**
+- Send gasless PYUSD payments with signature
+- Real-time balance display (6 decimal precision)
+- Priority fee options for faster execution
+- Transaction status tracking with Etherscan links
+- Auto-refresh after successful payment
+
+**4. MATE Token Faucet**
+- One-click token claiming via `recalculateReward()` function
+- Get 2.5 to 12,707.5 MATE tokens per claim
+- Real-time balance updates
+- Transaction tracking with Etherscan links
+- Testnet-only feature for development
+- Info about MATE token usage (username registration, priority fees, etc.)
+
+**5. MATE Payment Center**
+- Send gasless MATE payments using EIP-191 signatures
+- Real-time balance display (18 decimal precision)
+- Recipient address validation
+- Amount input with MAX button
+- Advanced options: Priority fee settings
+- Debug status indicators (EVVM ID, nonce, validation)
+- Auto-execute after signature
+- Auto-refresh with 500ms delay after transaction
+- Success/error alerts with Etherscan links
+
+**6. Account Viewer**
 - MATE balance display
 - Staker status indicator
 - Current nonce (transaction counter)
 - Direct Etherscan link
 
-**5. Transaction History**
+**7. Transaction History**
 - Last 10,000 blocks of transactions
 - HyperSync-powered instant queries
 - Filter by contract (EVVM, Staking, NameService, Treasury)
@@ -314,6 +352,8 @@ envioftpayvvm/
 │   │   │   │   ├── EvvmDashboard.tsx
 │   │   │   │   ├── PyusdPayment.tsx
 │   │   │   │   ├── PyusdTreasury.tsx
+│   │   │   │   ├── MatePayment.tsx       # MATE payment UI
+│   │   │   │   ├── MateFaucet.tsx        # MATE faucet UI
 │   │   │   │   ├── AccountViewer.tsx
 │   │   │   │   └── TransactionHistory.tsx
 │   │   │   │
@@ -322,8 +362,10 @@ envioftpayvvm/
 │   │   ├── hooks/
 │   │   │   ├── payvvm/            # PAYVVM custom hooks ⭐
 │   │   │   │   ├── useEvvmState.ts        # State reading
-│   │   │   │   ├── useEvvmPayment.ts      # Payment logic
-│   │   │   │   └── usePyusdTreasury.ts    # Treasury operations
+│   │   │   │   ├── useEvvmPayment.ts      # PYUSD payment logic
+│   │   │   │   ├── usePyusdTreasury.ts    # Treasury operations
+│   │   │   │   ├── useMatePayment.ts      # MATE payment & balance
+│   │   │   │   └── useMateFaucet.ts       # MATE faucet claiming
 │   │   │   │
 │   │   │   └── scaffold-eth/     # Scaffold-ETH hooks
 │   │   │
@@ -415,6 +457,7 @@ Real-time State (RPC)  +  Historical Data (HyperSync)  +  Indexed Events (Envio)
 | **Estimator** | `0x5dB7cDb7601f9ABCfc5089D66b1A3525471bf2aB` | [View →](https://sepolia.etherscan.io/address/0x5dB7cDb7601f9ABCfc5089D66b1A3525471bf2aB) |
 | **Treasury** | `0x3D6cB29a1F97a2CFf7a48af96F7ED3A02F6aA38E` | [View →](https://sepolia.etherscan.io/address/0x3D6cB29a1F97a2CFf7a48af96F7ED3A02F6aA38E) |
 | **PYUSD Token** | `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9` | [View →](https://sepolia.etherscan.io/token/0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9) |
+| **MATE Token** | `0x0000000000000000000000000000000000000001` | Protocol Constant (Native EVVM Token) |
 
 **EVVM Registry**: ID #1000 (First Public EVVM Instance!)
 View at: https://www.evvm.info/evvms/1000
@@ -471,10 +514,32 @@ NEXT_PUBLIC_ALCHEMY_API_KEY=your_alchemy_key
 
 ### Manual Testing Flow
 
-**Payment Flow**:
+**MATE Faucet Flow**:
 1. Connect wallet to Sepolia
 2. Navigate to `/payvvm`
-3. Check EVVM balance shows correctly
+3. Scroll to "MATE Token Faucet" section
+4. Click "Claim MATE Tokens"
+5. Confirm transaction in wallet
+6. Wait ~5-10 seconds for confirmation
+7. Verify balance updates automatically
+8. Check success message with Etherscan link
+
+**MATE Payment Flow**:
+1. Ensure MATE balance (use faucet if needed)
+2. Navigate to "Send MATE Payment" section
+3. Enter recipient address
+4. Enter amount (or click MAX)
+5. Click "Send Payment"
+6. Sign message in wallet (NOT a transaction, just signature)
+7. Wait for auto-execution
+8. Wait for confirmation
+9. Verify balance updates automatically
+10. Verify recipient received MATE
+
+**PYUSD Payment Flow**:
+1. Connect wallet to Sepolia
+2. Navigate to `/payvvm`
+3. Check EVVM PYUSD balance shows correctly
 4. Enter recipient address and amount
 5. Click "Send Payment"
 6. Sign message in wallet
@@ -499,6 +564,7 @@ NEXT_PUBLIC_ALCHEMY_API_KEY=your_alchemy_key
 - **QUICK_LOCAL_TEST.md** - Quick testing walkthrough
 - **NONCE_ERROR_SOLUTION_PLAN.md** - Technical deep-dive on payment nonce handling
 - **DEPLOYMENT_CHECKLIST.md** - Step-by-step deployment instructions
+- **MATE_PAYMENT_AND_FAUCET.md** - Comprehensive MATE token feature documentation
 
 ### External Documentation
 - **EVVM Documentation**: [evvm.info/docs](https://www.evvm.info/docs)
@@ -540,12 +606,15 @@ NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_actual_project_id
 ### ✅ Completed Features
 
 - [x] **Gasless PYUSD payment system** with EIP-191 signatures
+- [x] **MATE token faucet** (2.5 to 12,707.5 MATE per claim)
+- [x] **Gasless MATE payment system** with EIP-191 signatures
 - [x] **HyperSync transaction history** (2000x faster than RPC)
 - [x] **Real-time state monitoring** via direct RPC
 - [x] **Treasury deposit/withdraw** with approval flow
-- [x] **Multi-contract integration** (6 contracts)
+- [x] **Multi-contract integration** (7 contracts)
 - [x] **Professional UI/UX** with loading states and error handling
-- [x] **Comprehensive documentation**
+- [x] **Auto-refresh after transactions** (500ms delay for state propagation)
+- [x] **Comprehensive documentation** (including MATE features)
 - [x] **Production-ready deployment** config
 
 ### 🚧 In Progress
