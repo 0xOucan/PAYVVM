@@ -10,16 +10,26 @@ const MATE_PER_STAKING_TOKEN = 5083;
 export const GoldenStaking = () => {
   const { address, isConnected } = useAccount();
   const [amount, setAmount] = useState('');
+  const [mounted, setMounted] = useState(false);
 
   const golden = useGoldenStaking();
 
+  // Handle client-side mounting (avoid SSR issues)
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Debug logging
-  console.log('🎣 GoldenStaking Component:', {
-    address,
-    goldenFisherAddress: golden.goldenFisherAddress,
-    isGoldenFisher: golden.isGoldenFisher,
-    isLoadingGoldenFisher: golden.isLoadingGoldenFisher,
-  });
+  useEffect(() => {
+    if (mounted && address && golden.goldenFisherAddress) {
+      console.log('🎣 GoldenStaking Component:', {
+        address,
+        goldenFisherAddress: golden.goldenFisherAddress,
+        isGoldenFisher: golden.isGoldenFisher,
+        isLoadingGoldenFisher: golden.isLoadingGoldenFisher,
+      });
+    }
+  }, [mounted, address, golden.goldenFisherAddress, golden.isGoldenFisher, golden.isLoadingGoldenFisher]);
 
   // Reset form after success
   useEffect(() => {
@@ -27,6 +37,11 @@ export const GoldenStaking = () => {
       setAmount('');
     }
   }, [golden.isSuccess]);
+
+  // Don't render anything until mounted (prevent SSR issues)
+  if (!mounted) {
+    return null;
+  }
 
   const handleStake = async () => {
     if (!amount || parseFloat(amount) <= 0) {

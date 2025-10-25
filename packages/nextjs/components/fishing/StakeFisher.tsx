@@ -11,8 +11,14 @@ export const StakeFisher = () => {
   const { address, isConnected } = useAccount();
   const [amount, setAmount] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const fisher = useStakeFisher();
+
+  // Handle client-side mounting (avoid SSR issues)
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Auto-execute after signature
   useEffect(() => {
@@ -27,6 +33,11 @@ export const StakeFisher = () => {
       setAmount('');
     }
   }, [fisher.isSuccess]);
+
+  // Don't render anything until mounted (prevent SSR issues)
+  if (!mounted) {
+    return null;
+  }
 
   const handleStake = async () => {
     if (!amount || parseFloat(amount) <= 0) {

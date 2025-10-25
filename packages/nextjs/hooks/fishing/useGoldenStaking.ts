@@ -96,16 +96,19 @@ export function useGoldenStaking() {
     }
   })();
 
-  // Debug logging
-  if (address && goldenFisherAddress) {
-    console.log('🔍 Golden Fisher Check:', {
-      connectedAddress: address,
-      goldenFisherAddress: goldenFisherAddress,
-      normalizedConnected: getAddress(address),
-      normalizedGolden: getAddress(goldenFisherAddress as string),
-      isGoldenFisher,
-    });
-  }
+  // Debug logging (only on client side)
+  useEffect(() => {
+    if (address && goldenFisherAddress) {
+      console.log('🔍 Golden Fisher Check:', {
+        connectedAddress: address,
+        goldenFisherAddress: goldenFisherAddress,
+        normalizedConnected: getAddress(address),
+        normalizedGolden: getAddress(goldenFisherAddress as string),
+        addressesMatch: getAddress(address) === getAddress(goldenFisherAddress as string),
+        isGoldenFisher,
+      });
+    }
+  }, [address, goldenFisherAddress, isGoldenFisher]);
 
   // Get staked amount
   const { data: stakedAmount, isLoading: isLoadingStakedAmount, refetch: refetchStakedAmount } = useReadContract({

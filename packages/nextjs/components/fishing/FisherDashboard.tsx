@@ -1,11 +1,23 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import { useFisherStats } from '~~/hooks/fishing/useFisherStats';
 import { useAccount } from 'wagmi';
 
 export const FisherDashboard = () => {
   const { address, isConnected } = useAccount();
   const { stats, recentExecutions, successRate, isProfitable, isLoading, clearStats } = useFisherStats();
+  const [mounted, setMounted] = useState(false);
+
+  // Handle client-side mounting (avoid SSR issues)
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Don't render anything until mounted (prevent SSR issues)
+  if (!mounted) {
+    return null;
+  }
 
   if (!isConnected) {
     return (
