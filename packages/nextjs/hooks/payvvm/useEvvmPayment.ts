@@ -168,6 +168,9 @@ export function useEvvmPayment() {
           priorityFee: priorityFeeWei,
           nonce: userNonce.toString(),
           signature,
+          executor: zeroAddress, // Include executor used in signature
+          priorityFlag: false, // Include priorityFlag used in signature
+          evvmId: evvmId?.toString(), // Include EVVM ID for debugging
         }),
       });
 

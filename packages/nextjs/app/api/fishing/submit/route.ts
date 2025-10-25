@@ -16,6 +16,9 @@ const pendingTransactions: Array<{
   priorityFee: string;
   nonce: string;
   signature: string;
+  executor: string;
+  priorityFlag: boolean;
+  evvmId?: string;
   executed: boolean;
 }> = [];
 
@@ -43,10 +46,10 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const { from, to, token, amount, priorityFee, nonce, signature } = body;
+    const { from, to, token, amount, priorityFee, nonce, signature, executor, priorityFlag, evvmId } = body;
 
     // Validate required fields
-    if (!from || !to || !token || !amount || !nonce || !signature) {
+    if (!from || !to || !token || !amount || !nonce || !signature || executor === undefined) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -76,6 +79,9 @@ export async function POST(request: NextRequest) {
       priorityFee: priorityFee || '0',
       nonce,
       signature,
+      executor: executor || '0x0000000000000000000000000000000000000000',
+      priorityFlag: priorityFlag !== undefined ? priorityFlag : false,
+      evvmId,
       executed: false,
     };
 

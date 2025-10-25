@@ -97,12 +97,20 @@ Become a network participant and earn MATE rewards by executing gasless payments
 - Recent executions history with transaction details
 - Profitability indicators
 
+**Fishing Pool System:**
+- Users sign payment messages locally (EIP-191 signatures)
+- Signed messages submitted to fishing pool API
+- Fisher bot polls API for pending signed messages
+- Fisher executes transactions on-chain (pays gas)
+- Complete gasless experience for end users
+
 **Backend Fisher Bot:**
-- Automated mempool monitoring
+- Automated fishing pool monitoring
 - Transaction execution with optimized gas pricing
-- Nonce management and synchronization
-- Error handling and retry logic
-- Performance logging
+- Signature verification and nonce management
+- Error handling and automatic retry logic
+- Performance tracking and logging
+- Golden Fisher mode for privileged operators
 
 ### 📊 Real-Time State Monitoring
 Live EVVM system metrics without indexer dependency:
@@ -156,7 +164,7 @@ Comprehensive integration with the entire EVVM ecosystem:
      └────────────────────────────────────┘
 ```
 
-### Payment Flow Architecture
+### Payment Flow Architecture (Fishing Pool)
 
 ```
 User Action: Send 10 PYUSD to Alice
@@ -175,14 +183,28 @@ User Action: Send 10 PYUSD to Alice
 └────────┬───────────────────────┘
          ▼
 ┌────────────────────────────────┐
-│  3. Submit to EVVM Contract    │
-│     pay(from, to, token,       │
-│         amount, fee, nonce,    │
-│         flag, executor, sig)   │
+│  3. Submit to Fishing Pool API │
+│     POST /api/fishing/submit   │
+│     { from, to, amount, sig,   │
+│       executor, priorityFlag } │
 └────────┬───────────────────────┘
          ▼
 ┌────────────────────────────────┐
-│  4. Contract Verification      │
+│  4. Fisher Bot Polls API       │
+│     GET /api/fishing/submit    │
+│     ?pending=true              │
+└────────┬───────────────────────┘
+         ▼
+┌────────────────────────────────┐
+│  5. Fisher Executes On-Chain   │
+│     pay(from, to, token,       │
+│         amount, fee, nonce,    │
+│         flag, executor, sig)   │
+│     Fisher pays gas fees       │
+└────────┬───────────────────────┘
+         ▼
+┌────────────────────────────────┐
+│  6. Contract Verification      │
 │     • Recover signer from sig  │
 │     • Verify nonce             │
 │     • Check balance            │
@@ -190,8 +212,9 @@ User Action: Send 10 PYUSD to Alice
 └────────┬───────────────────────┘
          ▼
 ┌────────────────────────────────┐
-│  5. Payment Complete!          │
+│  7. Payment Complete!          │
 │     Alice receives 10 PYUSD    │
+│     Fisher earns priority fee  │
 │     Transaction confirmed      │
 └────────────────────────────────┘
 ```
@@ -250,6 +273,35 @@ yarn start
 # Open in browser
 # http://localhost:3000
 ```
+
+### Run Fisher Bot (Optional)
+
+To participate in the Fisher Network and execute gasless payments:
+
+```bash
+# Configure fisher bot
+cd packages/nextjs
+cp .env.example .env
+
+# Add your fisher private key
+# FISHER_PRIVATE_KEY=0x_your_private_key_here
+# FISHER_ENABLED=true
+
+# Start the fisher bot (in a separate terminal)
+yarn fisher:start
+```
+
+**Fisher Bot Requirements:**
+- Staked MATE tokens (5083 MATE per staking token)
+- ETH on Sepolia for gas fees
+- Golden Fisher status (for VIP privileges) or public staking
+
+**What the bot does:**
+- Monitors fishing pool API for signed payment messages
+- Executes transactions on behalf of users
+- Earns MATE rewards + optional priority fees
+- Automatic retry on failure
+- Performance tracking and logging
 
 ### Optional: Run Envio Indexer
 
@@ -407,7 +459,9 @@ envioftpayvvm/
 │   │   │   ├── envio/             # Indexer dashboard
 │   │   │   ├── blockexplorer/     # Block explorer
 │   │   │   └── api/               # API routes
-│   │   │       └── transactions/  # HyperSync queries
+│   │   │       ├── transactions/  # HyperSync queries
+│   │   │       └── fishing/       # Fishing pool API ⭐
+│   │   │           └── submit/    # Submit & poll signed messages
 │   │   │
 │   │   ├── components/
 │   │   │   ├── payvvm/            # PAYVVM components ⭐

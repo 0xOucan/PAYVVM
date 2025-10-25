@@ -295,8 +295,8 @@ class FisherBot {
           BigInt(tx.amount),
           BigInt(tx.priorityFee),
           BigInt(tx.nonce),
-          false, // priorityFlag
-          this.account.address, // executor (fisher)
+          tx.priorityFlag !== undefined ? tx.priorityFlag : false, // Use priorityFlag from transaction
+          (tx.executor || '0x0000000000000000000000000000000000000000') as `0x${string}`, // Use executor from signature
           tx.signature as `0x${string}`,
         ],
         gas: BigInt(this.gasLimit),
