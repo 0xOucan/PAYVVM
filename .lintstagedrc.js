@@ -1,4 +1,4 @@
-const path = require("path");
+import path from "path";
 
 const buildNextEslintCommand = (filenames) =>
   `yarn next:lint --fix --file ${filenames
@@ -12,7 +12,7 @@ const buildHardhatEslintCommand = (filenames) =>
     .map((f) => path.relative(path.join("packages", "hardhat"), f))
     .join(" ")}`;
 
-module.exports = {
+export default {
   "packages/nextjs/**/*.{ts,tsx}": [
     buildNextEslintCommand,
     checkTypesNextCommand,

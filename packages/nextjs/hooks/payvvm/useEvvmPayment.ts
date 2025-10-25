@@ -145,7 +145,49 @@ export function useEvvmPayment() {
   };
 
   /**
-   * Execute payment after signature is obtained
+   * Submit signed payment to fishing pool (for fishers to execute)
+   */
+  const submitToFishers = async () => {
+    if (!signature || !paymentData || !address || typeof userNonce !== 'bigint') {
+      console.error('Missing signature or payment data');
+      return;
+    }
+
+    try {
+      const amountWei = parseUnits(paymentData.amount, 6).toString();
+      const priorityFeeWei = parseUnits(paymentData.priorityFee || '0', 6).toString();
+
+      const response = await fetch('/api/fishing/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: address,
+          to: paymentData.to,
+          token: PYUSD_ADDRESS,
+          amount: amountWei,
+          priorityFee: priorityFeeWei,
+          nonce: userNonce.toString(),
+          signature,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit to fishing pool');
+      }
+
+      console.log('✅ Submitted to fishing pool:', data);
+      return data;
+
+    } catch (err) {
+      console.error('Error submitting to fishing pool:', err);
+      throw err;
+    }
+  };
+
+  /**
+   * Execute payment after signature is obtained (direct execution)
    */
   const executePayment = () => {
     if (!signature || !paymentData || !address || typeof userNonce !== 'bigint') {
@@ -191,6 +233,7 @@ export function useEvvmPayment() {
   return {
     initiatePayment,
     executePayment,
+    submitToFishers,
     reset,
     signature,
     hash,

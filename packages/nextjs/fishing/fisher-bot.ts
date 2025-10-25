@@ -5,7 +5,7 @@
  * Monitors mempool for payment signatures and executes them
  */
 
-import { createPublicClient, createWalletClient, http, webSocket, parseAbiItem, decodeAbiParameters } from 'viem';
+import { createPublicClient, createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia } from 'viem/chains';
 import * as dotenv from 'dotenv';
@@ -19,7 +19,6 @@ dotenv.config();
 // Contract addresses
 const EVVM_ADDRESS = '0x9486f6C9d28ECdd95aba5bfa6188Bbc104d89C3e' as const;
 const STAKING_ADDRESS = '0x64A47d84dE05B9Efda4F63Fbca2Fc8cEb96E6816' as const;
-const MATE_TOKEN = '0x0000000000000000000000000000000000000001' as const;
 
 // EVVM ABI
 const EVVM_ABI = [
@@ -166,8 +165,8 @@ class FisherBot {
 
     console.log('✓ Fisher bot ready\n');
 
-    // Start monitoring mempool
-    await this.monitorMempool();
+    // Start monitoring fishing pool API
+    await this.monitorFishingPool();
   }
 
   /**
@@ -208,43 +207,133 @@ class FisherBot {
   }
 
   /**
-   * Monitor mempool for pending EVVM pay() transactions
+   * Monitor fishing pool API for pending signed messages
    */
-  async monitorMempool() {
-    console.log('👀 Monitoring mempool for payment signatures...\n');
+  async monitorFishingPool() {
+    console.log('👀 Monitoring fishing pool for signed payment messages...\n');
+    console.log('   API endpoint: http://localhost:3000/api/fishing/submit\n');
+
+    // Handle graceful shutdown
+    process.on('SIGINT', () => {
+      console.log('\n\n🛑 Shutting down fisher bot...');
+      this.printStats();
+      process.exit(0);
+    });
+
+    // Poll the fishing pool API every 2 seconds
+    setInterval(async () => {
+      try {
+        await this.checkFishingPool();
+      } catch (error) {
+        console.error('Error checking fishing pool:', error);
+      }
+    }, 2000);
+
+    console.log('✓ Fishing pool monitoring active\n');
+  }
+
+  /**
+   * Check fishing pool API for pending transactions
+   */
+  async checkFishingPool() {
+    try {
+      const response = await fetch('http://localhost:3000/api/fishing/submit?pending=true&limit=10');
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.transactions && data.transactions.length > 0) {
+        console.log(`\n🎣 Found ${data.transactions.length} pending transaction(s) in fishing pool`);
+
+        for (const tx of data.transactions) {
+          await this.executeFishedTransaction(tx);
+        }
+      }
+    } catch (error) {
+      // Silently fail if API is not available (dev server might not be running)
+      if (error instanceof Error && !error.message.includes('ECONNREFUSED')) {
+        console.error('Error fetching from fishing pool:', error);
+      }
+    }
+  }
+
+  /**
+   * Execute a transaction from the fishing pool
+   */
+  async executeFishedTransaction(tx: any) {
+    const txId = `${tx.from}-${tx.nonce}`;
+
+    // Skip if already processing
+    if (this.processingTxs.has(txId)) {
+      return;
+    }
+
+    this.processingTxs.add(txId);
 
     try {
-      // Use WebSocket for real-time mempool monitoring
-      const wsClient = createPublicClient({
-        chain: sepolia,
-        transport: webSocket(this.wsUrl),
+      console.log('\n📋 Processing fished transaction:');
+      console.log(`   ID: ${tx.id}`);
+      console.log(`   From: ${tx.from}`);
+      console.log(`   To: ${tx.to}`);
+      console.log(`   Amount: ${tx.amount} (${tx.token})`);
+      console.log(`   Priority Fee: ${tx.priorityFee}`);
+      console.log(`   Nonce: ${tx.nonce}`);
+
+      // Execute the payment
+      const hash = await this.walletClient.writeContract({
+        address: EVVM_ADDRESS,
+        abi: EVVM_ABI,
+        functionName: 'pay',
+        args: [
+          tx.from as `0x${string}`,
+          tx.to as `0x${string}`,
+          '', // to_identity
+          tx.token as `0x${string}`,
+          BigInt(tx.amount),
+          BigInt(tx.priorityFee),
+          BigInt(tx.nonce),
+          false, // priorityFlag
+          this.account.address, // executor (fisher)
+          tx.signature as `0x${string}`,
+        ],
+        gas: BigInt(this.gasLimit),
       });
 
-      // Watch for pending transactions
-      const unwatch = wsClient.watchPendingTransactions({
-        onTransactions: async (hashes) => {
-          for (const hash of hashes) {
-            await this.handlePendingTransaction(hash);
-          }
-        },
-      });
+      console.log(`\n⏳ Transaction submitted: ${hash}`);
+      console.log(`   Waiting for confirmation...`);
 
-      // Keep bot running
-      console.log('✓ Mempool monitoring active\n');
+      // Wait for transaction confirmation
+      const receipt = await this.publicClient.waitForTransactionReceipt({ hash });
 
-      // Handle graceful shutdown
-      process.on('SIGINT', () => {
-        console.log('\n\n🛑 Shutting down fisher bot...');
-        unwatch();
-        this.printStats();
-        process.exit(0);
-      });
+      if (receipt.status === 'success') {
+        console.log(`✅ Transaction successful!`);
+        console.log(`   Gas used: ${receipt.gasUsed}`);
+        console.log(`   Block: ${receipt.blockNumber}`);
+
+        // Mark as executed in fishing pool
+        await fetch('http://localhost:3000/api/fishing/submit', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: tx.id, txHash: hash }),
+        });
+
+        this.stats.successful++;
+      } else {
+        console.log(`❌ Transaction failed`);
+        this.stats.failed++;
+      }
+
+      this.stats.total++;
+
     } catch (error) {
-      console.error('❌ WebSocket connection failed:', error);
-      console.log('\n⚠️  Falling back to HTTP polling...\n');
-
-      // Fallback: poll for new blocks and check transactions
-      await this.pollForTransactions();
+      console.error(`❌ Error executing fished transaction:`, error);
+      this.stats.failed++;
+      this.stats.total++;
+    } finally {
+      this.processingTxs.delete(txId);
     }
   }
 

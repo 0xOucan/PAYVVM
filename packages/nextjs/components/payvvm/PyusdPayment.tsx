@@ -7,7 +7,7 @@ import { useEvvmPayment } from '~~/hooks/payvvm/useEvvmPayment';
 import { usePyusdEvvmBalance, PYUSD_ADDRESS } from '~~/hooks/payvvm/usePyusdTreasury';
 
 export const PyusdPayment = () => {
-  const { address, isConnected } = useAccount();
+  const { isConnected } = useAccount();
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
   const [priorityFee, setPriorityFee] = useState('0');
@@ -16,12 +16,19 @@ export const PyusdPayment = () => {
   const evvmBalance = usePyusdEvvmBalance();
   const payment = useEvvmPayment();
 
-  // Auto-execute payment after signature is obtained
+  // Auto-submit to fishing pool after signature is obtained
   useEffect(() => {
     if (payment.signature && !payment.hash && !payment.isExecuting) {
-      payment.executePayment();
+      // Submit to fishing pool for fishers to execute
+      payment.submitToFishers().then(() => {
+        console.log('✅ Payment submitted to fishing pool - fishers will execute it');
+      }).catch((error) => {
+        console.error('Failed to submit to fishing pool, executing directly:', error);
+        // Fallback to direct execution if fishing pool fails
+        payment.executePayment();
+      });
     }
-  }, [payment.signature]);
+  }, [payment]);
 
   // Reset form after successful payment
   useEffect(() => {
