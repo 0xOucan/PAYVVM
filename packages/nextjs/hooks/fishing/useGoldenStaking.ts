@@ -105,24 +105,6 @@ export function useGoldenStaking() {
     }
   })();
 
-  // Debug logging (only on client side)
-  useEffect(() => {
-    if (address && goldenFisherAddress) {
-      console.log('🔍 Golden Fisher Check:', {
-        connectedAddress: address,
-        goldenFisherAddress: goldenFisherAddress,
-        normalizedConnected: getAddress(address),
-        normalizedGolden: getAddress(goldenFisherAddress as string),
-        addressesMatch: getAddress(address) === getAddress(goldenFisherAddress as string),
-        isGoldenFisher,
-        evvmId: evvmId?.toString(),
-        paymentNonce: paymentNonce?.toString(),
-        isLoadingEvvmId,
-        isLoadingPaymentNonce,
-      });
-    }
-  }, [address, goldenFisherAddress, isGoldenFisher, evvmId, paymentNonce, isLoadingEvvmId, isLoadingPaymentNonce]);
-
   // Get staked amount
   const { data: stakedAmount, isLoading: isLoadingStakedAmount, refetch: refetchStakedAmount } = useReadContract({
     address: STAKING_ADDRESS,
@@ -196,6 +178,24 @@ export function useGoldenStaking() {
 
   // Sign payment message
   const { signMessage, data: paymentSignature, reset: resetSignature } = useSignMessage();
+
+  // Debug logging (only on client side)
+  useEffect(() => {
+    if (address && goldenFisherAddress) {
+      console.log('🔍 Golden Fisher Check:', {
+        connectedAddress: address,
+        goldenFisherAddress: goldenFisherAddress,
+        normalizedConnected: getAddress(address),
+        normalizedGolden: getAddress(goldenFisherAddress as string),
+        addressesMatch: getAddress(address) === getAddress(goldenFisherAddress as string),
+        isGoldenFisher,
+        evvmId: evvmId?.toString(),
+        paymentNonce: paymentNonce?.toString(),
+        isLoadingEvvmId,
+        isLoadingPaymentNonce,
+      });
+    }
+  }, [address, goldenFisherAddress, isGoldenFisher, evvmId, paymentNonce, isLoadingEvvmId, isLoadingPaymentNonce]);
 
   // Execute golden staking
   const {
