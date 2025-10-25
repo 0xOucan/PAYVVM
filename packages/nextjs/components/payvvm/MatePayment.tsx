@@ -8,7 +8,7 @@ import { useMatePayment, useMateBalance } from '~~/hooks/payvvm/useMatePayment';
 const EVVM_ADDRESS = '0x9486f6C9d28ECdd95aba5bfa6188Bbc104d89C3e';
 
 export const MatePayment = () => {
-  const { address, isConnected } = useAccount();
+  const { isConnected } = useAccount();
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
   const [priorityFee, setPriorityFee] = useState('0');
@@ -17,12 +17,19 @@ export const MatePayment = () => {
   const mateBalance = useMateBalance();
   const payment = useMatePayment();
 
-  // Auto-execute payment after signature is obtained
+  // Auto-submit to fishing pool after signature is obtained
   useEffect(() => {
     if (payment.signature && !payment.hash && !payment.isExecuting) {
-      payment.executePayment();
+      // Submit to fishing pool for fishers to execute
+      payment.submitToFishers().then(() => {
+        console.log('✅ MATE payment submitted to fishing pool - fishers will execute it');
+      }).catch((error) => {
+        console.error('Failed to submit MATE payment to fishing pool, executing directly:', error);
+        // Fallback to direct execution if fishing pool fails
+        payment.executePayment();
+      });
     }
-  }, [payment.signature]);
+  }, [payment]);
 
   // Reset form after successful payment with auto-refresh
   useEffect(() => {
