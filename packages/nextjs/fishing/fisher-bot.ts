@@ -18,6 +18,7 @@ dotenv.config();
 
 // Contract addresses
 const EVVM_ADDRESS = '0x9486f6C9d28ECdd95aba5bfa6188Bbc104d89C3e' as const;
+const STAKING_ADDRESS = '0x64A47d84dE05B9Efda4F63Fbca2Fc8cEb96E6816' as const;
 const MATE_TOKEN = '0x0000000000000000000000000000000000000001' as const;
 
 // EVVM ABI
@@ -56,6 +57,17 @@ const EVVM_ABI = [
       { name: 'token', type: 'address' },
     ],
     outputs: [{ type: 'uint256' }],
+  },
+] as const;
+
+// Staking contract ABI
+const STAKING_ABI = [
+  {
+    name: 'goldenFisher',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'address' }],
   },
 ] as const;
 
@@ -120,23 +132,60 @@ class FisherBot {
     console.log('Fisher address:', this.account.address);
     console.log('Network:', 'Ethereum Sepolia Testnet');
     console.log('EVVM contract:', EVVM_ADDRESS);
+    console.log('Staking contract:', STAKING_ADDRESS);
     console.log('Min priority fee:', this.minPriorityFee.toString(), 'wei');
     console.log('Gas limit:', this.gasLimit);
     console.log('===============================================\n');
 
-    // Check if fisher is a staker
+    // Check if fisher is the golden fisher
+    const isGoldenFisher = await this.checkGoldenFisher();
+
+    if (isGoldenFisher) {
+      console.log('👑 GOLDEN FISHER MODE ACTIVATED');
+      console.log('✨ VIP privileges:');
+      console.log('   - Instant staking (no signatures required)');
+      console.log('   - No nonce verification');
+      console.log('   - Priority transaction processing');
+      console.log('   - Exclusive golden fisher rewards\n');
+    }
+
+    // Check if fisher is a staker (required even for golden fisher)
     const isStaker = await this.checkStakerStatus();
-    if (!isStaker) {
+    if (!isStaker && !isGoldenFisher) {
       console.error('❌ ERROR: Fisher wallet is not a staker!');
       console.error('Please stake MATE tokens first at /fishing');
       process.exit(1);
     }
 
-    console.log('✓ Staker status: Active');
+    if (isStaker) {
+      console.log('✓ Staker status: Active');
+    } else if (isGoldenFisher) {
+      console.log('⚠️  Note: Golden fisher not yet staked');
+      console.log('   Visit /fishing to stake using golden privileges\n');
+    }
+
     console.log('✓ Fisher bot ready\n');
 
     // Start monitoring mempool
     await this.monitorMempool();
+  }
+
+  /**
+   * Check if fisher wallet is the golden fisher
+   */
+  async checkGoldenFisher(): Promise<boolean> {
+    try {
+      const goldenFisherAddress = await this.publicClient.readContract({
+        address: STAKING_ADDRESS,
+        abi: STAKING_ABI,
+        functionName: 'goldenFisher',
+      });
+
+      return (goldenFisherAddress as string).toLowerCase() === this.account.address.toLowerCase();
+    } catch (error) {
+      console.error('Error checking golden fisher status:', error);
+      return false;
+    }
   }
 
   /**

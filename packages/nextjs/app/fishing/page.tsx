@@ -1,6 +1,7 @@
 "use client";
 
 import type { NextPage } from "next";
+import { GoldenStaking } from "~~/components/fishing/GoldenStaking";
 import { StakeFisher } from "~~/components/fishing/StakeFisher";
 import { FisherDashboard } from "~~/components/fishing/FisherDashboard";
 
@@ -47,7 +48,12 @@ const FishingPage: NextPage = () => {
           </div>
         </div>
 
-        {/* Staking Section */}
+        {/* Golden Fisher Section - VIP Staking */}
+        <div>
+          <GoldenStaking />
+        </div>
+
+        {/* Staking Section - Public Staking */}
         <div>
           <StakeFisher />
         </div>
