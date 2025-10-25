@@ -1,17 +1,142 @@
-name: envio-indexer
+name: payvvm-indexer
+description: EVVM State Indexer - Track account balances, nonces, staker status, and EVVM metadata
+ecosystem: evm
+
+# STATE-BASED INDEXING STRATEGY
+# Since PAYVVM contracts don't emit events, we track state changes via:
+# 1. Block handlers - Poll contract state periodically
+# 2. Transaction tracking - Monitor successful transactions
+# 3. State snapshots - Store user account data over time
+
+# We'll use a hybrid approach:
+# - Track transactions TO contracts to know WHEN state changed
+# - Then read the actual state using contract view functions
+
 contracts:
-  - name: YourContract
+  # EVVM Core Contract - Track all transactions and read state
+  - name: Evvm
     handler: src/EventHandlers.ts
-    events:
-      - event: GreetingChange(address indexed greetingSetter, string newGreeting, bool premium, uint256 value)
+    # Track these functions to know when to update state
+    functions:
+      # Payment functions
+      - function: "pay(address,address,string,address,uint256,uint256,uint256,bool,address,bytes)"
+      - function: "payMultiple((address,address,string,address,uint256,uint256,uint256,bool,address,bytes)[])"
+      - function: "dispersePay((uint256,address,string)[],address,uint256,uint256,bool,address,bytes)"
+      - function: "caPay(address,address,uint256)"
+      - function: "disperseCaPay((uint256,address)[],address,uint256)"
+
+      # Withdrawal functions
+      - function: "fisherWithdrawalGasless(address,address,uint256,uint256,address,bytes)"
+
+      # Treasury functions (called by Treasury contract)
+      - function: "_setupNameServiceAndTreasuryAddress(address,address)"
+
+  # Staking Contract - Track staking state changes
+  - name: Staking
+    handler: src/EventHandlers.ts
+    functions:
+      # Public staking
+      - function: "publicStaking(address,uint256,uint256,bytes)"
+      - function: "publicUnstaking(address,uint256,uint256,bytes)"
+
+      # Presale staking
+      - function: "presaleStaking(address,uint256,uint256,bytes)"
+      - function: "presaleUnstaking(address,uint256,uint256,bytes)"
+
+      # Golden staking (sudo-like)
+      - function: "goldenStaking(address,uint256)"
+      - function: "goldenUnstaking(address,uint256)"
+
+      # Claim rewards
+      - function: "claimRewards(address,uint256,bytes)"
+
+  # NameService Contract - Track identity registrations
+  - name: NameService
+    handler: src/EventHandlers.ts
+    functions:
+      # Registration process
+      - function: "preRegistrationUsername(bytes32,uint256,bytes)"
+      - function: "registrationUsername(string,uint256,uint256,bytes)"
+      - function: "renewUsername(string,uint256,bytes)"
+
+      # Metadata management
+      - function: "setMetadata(string,string,string,uint256,bytes)"
+
+      # Marketplace
+      - function: "makeOffer(string,uint256,uint256,bytes)"
+      - function: "acceptOffer(string,address,uint256,bytes)"
+      - function: "cancelOffer(string,address,uint256,bytes)"
+
+      # Transfer
+      - function: "transferUsername(string,address,uint256,bytes)"
+
+  # Treasury Contract - Track deposits and withdrawals
+  - name: Treasury
+    handler: src/EventHandlers.ts
+    functions:
+      # Deposit to EVVM
+      - function: "depositERC20ToEvvm(address,uint256)"
+      - function: "depositETHToEvvm()"
+
+      # Withdraw from EVVM
+      - function: "withdrawERC20FromEvvm(address,address,uint256,uint256,bytes)"
+      - function: "withdrawETHFromEvvm(address,uint256,uint256,bytes)"
+
+# Network configuration
 networks:
-  - id: 31337
-    start_block: 1
+  - id: 11155111  # Ethereum Sepolia
+    start_block: 7340000  # Start from deployment block
     rpc_config:
-      url: http://localhost:8545
+      # Use ANY Sepolia RPC URL - no API key required if using public RPC!
+      url: ${RPC_URL}
+
     contracts:
-      - name: YourContract
+      - name: Evvm
         address:
-          - '0x5FbDB2315678afecb367f032d93F642f64180aa3'
-unordered_multichain_mode: true
-preload_handlers: true
+          - "0x9486f6C9d28ECdd95aba5bfa6188Bbc104d89C3e"
+
+      - name: Staking
+        address:
+          - "0x64A47d84dE05B9Efda4F63Fbca2Fc8cEb96E6816"
+
+      - name: NameService
+        address:
+          - "0xa4ba4e9270bde8fbbf4328925959287a72ba0a55"
+
+      - name: Treasury
+        address:
+          - "0x3d6cb29a1f97a2cff7a48af96f7ed3a02f6aa38e"
+
+# Indexing configuration
+unordered_multichain_mode: false
+rollback_on_reorg: true
+
+# Track all transaction fields for state reconstruction
+field_selection:
+  transaction_fields:
+    - "from"
+    - "to"
+    - "value"
+    - "input"
+    - "gas"
+    - "gasPrice"
+    - "nonce"
+    - "hash"
+  block_fields:
+    - "timestamp"
+    - "number"
+    - "hash"
+  receipt_fields:
+    - "status"
+    - "gasUsed"
+    - "effectiveGasPrice"
+
+# Note: We'll use contract view functions in handlers to read state:
+# - getBalance(address user, address token) -> uint256
+# - isAddressStaker(address) -> bool
+# - getNextCurrentSyncNonce(address) -> uint256
+# - getIfUsedAsyncNonce(address, uint256) -> bool
+# - getEvvmMetadata() -> EvvmMetadata struct
+# - NameService: verifyIfIdentityExist(string) -> bool
+# - NameService: getOwnerOfIdentity(string) -> address
+# - Staking: getStakingInfo(address) -> StakingInfo struct

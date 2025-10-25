@@ -47,7 +47,9 @@
     "vercel": "yarn workspace @se-2/nextjs vercel",
     "vercel:login": "yarn workspace @se-2/nextjs vercel:login",
     "vercel:yolo": "yarn workspace @se-2/nextjs vercel:yolo",
-    "verify": "yarn foundry:verify"
+    "verify": "yarn foundry:verify",
+    "fisher:start": "tsx packages/nextjs/fishing/fisher-bot.ts",
+    "fisher:dev": "tsx watch packages/nextjs/fishing/fisher-bot.ts"
   },
   "devDependencies": {
     "husky": "~9.1.6",
@@ -56,5 +58,11 @@
   "packageManager": "yarn@3.2.3",
   "engines": {
     "node": ">=20.18.3"
-  }
+  },
+  "dependencies": {
+    "@envio-dev/hypersync-client": "^0.6.6",
+    "dotenv": "^17.2.3",
+    "viem": "^2.38.4"
+  },
+  "type": "module"
 }

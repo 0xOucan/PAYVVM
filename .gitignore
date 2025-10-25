@@ -21,3 +21,38 @@ node_modules
 
 # cli
 dist
+
+# Environment variables (IMPORTANT: Never commit these!)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+!.env.example
+
+# Foundry/Forge
+**/broadcast/**/31337/
+**/broadcast/**/11155111/
+**/broadcast/**/421614/
+**/cache/
+**/out/
+
+# Private keys and sensitive data
+*.pem
+*.key
+*.p12
+*.pfx
+**/.foundry/keystores/
+**/keystore/
+
+# Vercel
+.vercel
+
+# Next.js
+.next/
+out/
+
+# Build outputs
+build/
+dist/

@@ -1,8 +1,227 @@
-type YourContract_GreetingChange {
-  id: ID!
-  greetingSetter: String!
-  newGreeting: String!
-  premium: Boolean!
-  value: BigInt!
+# PAYVVM Explorer GraphQL Schema
+# Defines all entities and relationships for the EVVM blockchain explorer
+
+# Core transaction entity
+type Transaction @entity {
+  id: ID! # Transaction hash
+  from: String! # Sender address
+  to: String! # Recipient address
+  token: String! # Token address
+  amount: BigInt! # Transfer amount
+  priorityFee: BigInt! # Priority fee paid
+  executor: String # Address that executed the transaction
+  isStaker: Boolean! # Whether executor was a staker
+  timestamp: BigInt! # Block timestamp
+  blockNumber: BigInt! # Block number
+  transactionType: String! # pay, payMultiple, dispersePay, caPay, etc.
+  status: String! # success, failed
 }
 
+# Payment batch transactions
+type PaymentBatch @entity {
+  id: ID! # Transaction hash + batch index
+  executor: String! # Address that processed the batch
+  successCount: Int! # Number of successful payments
+  failedCount: Int! # Number of failed payments
+  timestamp: BigInt!
+  blockNumber: BigInt!
+}
+
+# User account entity
+type Account @entity {
+  id: ID! # User address
+  address: String! # User address (duplicate for queries)
+  totalTransactionsSent: Int! # Total outgoing transactions
+  totalTransactionsReceived: Int! # Total incoming transactions
+  totalVolumeSent: BigInt! # Total amount sent (in wei)
+  totalVolumeReceived: BigInt! # Total amount received (in wei)
+  isStaker: Boolean! # Current staker status
+  isFisher: Boolean! # Whether registered as fisher
+  firstSeenBlock: BigInt! # First interaction block
+  lastSeenBlock: BigInt! # Last interaction block
+}
+
+# Token balance tracking
+type TokenBalance @entity {
+  id: ID! # address + token
+  accountId: String! # Account address
+  token: String! # Token address
+  balance: BigInt! # Current balance
+  lastUpdated: BigInt! # Last update timestamp
+}
+
+# Staking information
+type Staking @entity {
+  id: ID! # Staker address
+  accountId: String! # Account address
+  stakedAmount: BigInt! # Currently staked amount
+  totalRewardsClaimed: BigInt! # Total rewards claimed
+  stakingStartTime: BigInt! # When staking started
+  lastRewardClaim: BigInt! # Last reward claim timestamp
+  isActive: Boolean! # Whether currently staking
+  fisherRegistrationDate: BigInt # When registered as fisher
+}
+
+# Staking events
+type StakeEvent @entity {
+  id: ID! # Transaction hash + log index
+  user: String! # User address
+  eventType: String! # deposit, withdraw, reward_claim
+  amount: BigInt! # Amount involved
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+}
+
+# Identity (username) registry
+type Identity @entity {
+  id: ID! # Username/identity string
+  ownerId: String! # Current owner address
+  identity: String! # Username string
+  registrationFee: BigInt! # Initial registration fee
+  renewalFee: BigInt # Latest renewal fee
+  registrationDate: BigInt! # When registered
+  expiryDate: BigInt! # When expires
+  isActive: Boolean! # Whether currently active
+}
+
+# Identity metadata
+type IdentityMetadata @entity {
+  id: ID! # identity + key
+  identityId: String! # Related identity
+  key: String! # Metadata key
+  value: String! # Metadata value
+  lastUpdated: BigInt! # Last update timestamp
+}
+
+# Identity transfer history
+type IdentityTransfer @entity {
+  id: ID! # Transaction hash + log index
+  identityId: String! # Related identity
+  from: String! # Previous owner
+  to: String! # New owner
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+}
+
+# Identity marketplace offers
+type IdentityOffer @entity {
+  id: ID! # identity + buyer address
+  identityId: String! # Identity being offered
+  buyer: String! # Buyer address
+  seller: String! # Seller address
+  offerPrice: BigInt! # Offered price
+  status: String! # pending, accepted, cancelled
+  createdAt: BigInt! # Offer creation timestamp
+  resolvedAt: BigInt # When accepted/cancelled
+  transactionHash: String!
+}
+
+# Treasury deposits
+type Deposit @entity {
+  id: ID! # Transaction hash + log index
+  user: String! # Depositor address
+  token: String! # Token address
+  amount: BigInt! # Deposit amount
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+}
+
+# Treasury withdrawals
+type Withdrawal @entity {
+  id: ID! # Transaction hash + log index
+  user: String! # Withdrawer address
+  token: String! # Token address
+  amount: BigInt! # Withdrawal amount
+  destination: String! # Destination address
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+  status: String! # pending, completed, failed
+}
+
+# Cross-chain bridge transactions
+type BridgeTransaction @entity {
+  id: ID! # Transaction hash + log index
+  user: String! # User initiating bridge
+  token: String! # Token being bridged
+  amount: BigInt! # Amount being bridged
+  sourceChain: Int # Source chain ID
+  targetChain: Int # Target chain ID
+  status: String! # initiated, completed, failed
+  initiatedAt: BigInt # Initiation timestamp
+  completedAt: BigInt # Completion timestamp
+  initiationTxHash: String # Initiation transaction hash
+  completionTxHash: String # Completion transaction hash
+}
+
+# Fisher rewards tracking
+type FisherReward @entity {
+  id: ID! # Transaction hash + log index
+  fisher: String! # Fisher address
+  amount: BigInt! # Reward amount
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+}
+
+# Era transitions (tokenomics)
+type EraTransition @entity {
+  id: ID! # Block number + era number
+  eraNumber: BigInt! # New era number
+  newReward: BigInt! # New reward amount
+  trigger: String! # Address that triggered transition
+  bonus: BigInt! # Bonus awarded to trigger
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+}
+
+# Reward estimations
+type RewardEstimation @entity {
+  id: ID! # Transaction hash + log index
+  user: String! # User address
+  estimatedReward: BigInt! # Estimated reward amount
+  stakingPeriod: BigInt! # Staking period considered
+  timestamp: BigInt!
+  blockNumber: BigInt!
+}
+
+# Daily statistics
+type DailyStats @entity {
+  id: ID! # Date in YYYY-MM-DD format
+  date: String! # Date string
+  totalTransactions: Int! # Total transactions that day
+  totalVolume: BigInt! # Total volume that day
+  uniqueUsers: Int! # Unique active users
+  newIdentities: Int! # New identities registered
+  totalStaked: BigInt! # Total staked amount
+  rewardsDistributed: BigInt! # Total rewards distributed
+}
+
+# Contract administration events
+type AdminEvent @entity {
+  id: ID! # Transaction hash + log index
+  eventType: String! # AdminProposed, AdminAccepted, etc.
+  oldAddress: String # Old address (if applicable)
+  newAddress: String # New address (if applicable)
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+}
+
+# Global protocol statistics
+type ProtocolStats @entity {
+  id: ID! # Singleton: "protocol-stats"
+  totalTransactions: Int! # All-time transactions
+  totalVolume: BigInt! # All-time volume
+  totalUsers: Int! # Total unique users
+  totalStakers: Int! # Current stakers
+  totalIdentities: Int! # Total identities registered
+  totalStaked: BigInt! # Current total staked
+  currentEra: BigInt! # Current era
+  currentReward: BigInt! # Current reward amount
+  lastUpdated: BigInt! # Last update timestamp
+}

@@ -1,0 +1,28 @@
+{
+  "buildCommand": "cd packages/nextjs && yarn build",
+  "outputDirectory": "packages/nextjs/.next",
+  "devCommand": "cd packages/nextjs && yarn dev",
+  "installCommand": "yarn install",
+  "framework": "nextjs",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/packages/nextjs/$1"
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_CHAIN_ID": "11155111",
+    "NEXT_PUBLIC_NETWORK_NAME": "sepolia"
+  },
+  "build": {
+    "env": {
+      "SKIP_ENV_VALIDATION": "true"
+    }
+  },
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  },
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD ./packages/nextjs"
+}

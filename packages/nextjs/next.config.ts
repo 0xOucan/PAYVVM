@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
   webpack: config => {
     config.resolve.fallback = { fs: false, net: false, tls: false };
     config.externals.push("pino-pretty", "lokijs", "encoding");
+    // Exclude HyperSync native module from webpack bundling (server-side only)
+    config.externals.push("@envio-dev/hypersync-client");
     return config;
   },
 };
