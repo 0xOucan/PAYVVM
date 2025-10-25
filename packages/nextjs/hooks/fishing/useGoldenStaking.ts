@@ -149,14 +149,14 @@ export function useGoldenStaking() {
     address: EVVM_ADDRESS,
     abi: [
       {
-        name: 'id',
+        name: 'getEvvmID',
         type: 'function',
         stateMutability: 'view',
         inputs: [],
         outputs: [{ type: 'uint256' }],
       },
     ] as const,
-    functionName: 'id',
+    functionName: 'getEvvmID',
     query: {
       refetchOnWindowFocus: true,
       staleTime: 0,
