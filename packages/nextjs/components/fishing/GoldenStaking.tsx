@@ -19,17 +19,51 @@ export const GoldenStaking = () => {
     setMounted(true);
   }, []);
 
-  // Debug logging
+  // Debug logging - MOVED TO TOP LEVEL FOR VISIBILITY
   useEffect(() => {
-    if (mounted && address && golden.goldenFisherAddress) {
-      console.log('🎣 GoldenStaking Component:', {
-        address,
-        goldenFisherAddress: golden.goldenFisherAddress,
-        isGoldenFisher: golden.isGoldenFisher,
-        isLoadingGoldenFisher: golden.isLoadingGoldenFisher,
-      });
+    if (mounted) {
+      const debugInfo = {
+        '🎣 COMPONENT': 'GoldenStaking Debug',
+        '1. Wallet': {
+          address,
+          isGoldenFisher: golden.isGoldenFisher,
+          goldenFisherAddress: golden.goldenFisherAddress,
+          isLoadingGoldenFisher: golden.isLoadingGoldenFisher,
+        },
+        '2. Contract Data': {
+          evvmId: golden.evvmId?.toString(),
+          evvmIdType: typeof golden.evvmId,
+          evvmIdRaw: golden.evvmId,
+          isLoadingEvvmId: golden.isLoadingEvvmId,
+          isEvvmIdError: golden.isEvvmIdError,
+          paymentNonce: golden.paymentNonce?.toString(),
+          paymentNonceType: typeof golden.paymentNonce,
+          isLoadingPaymentNonce: golden.isLoadingPaymentNonce,
+          isPaymentNonceError: golden.isPaymentNonceError,
+        },
+        '3. Button State': {
+          amount,
+          hasAmount: !!amount && parseFloat(amount) > 0,
+          isExecuting: golden.isExecuting,
+          isConfirming: golden.isConfirming,
+          evvmIdCheck: !!golden.evvmId,
+          paymentNonceCheck: !!golden.paymentNonce,
+          DISABLED_REASON: !amount ? 'No amount' :
+            parseFloat(amount) <= 0 ? 'Amount <= 0' :
+            golden.isExecuting ? 'Executing' :
+            golden.isConfirming ? 'Confirming' :
+            golden.isLoadingEvvmId ? 'Loading EVVM ID' :
+            golden.isLoadingPaymentNonce ? 'Loading Nonce' :
+            golden.evvmId === undefined || golden.evvmId === null ? 'No EVVM ID' :
+            golden.paymentNonce === undefined || golden.paymentNonce === null ? 'No Payment Nonce' :
+            '✅ ENABLED!',
+        },
+      };
+      console.log(debugInfo);
+      console.table(debugInfo['2. Contract Data']);
+      console.table(debugInfo['3. Button State']);
     }
-  }, [mounted, address, golden.goldenFisherAddress, golden.isGoldenFisher, golden.isLoadingGoldenFisher]);
+  }, [mounted, address, golden, amount]);
 
   // Reset form after success
   useEffect(() => {
@@ -247,9 +281,9 @@ export const GoldenStaking = () => {
               )}
             </div>
             <div className="stat-desc text-xs">
-              {golden.evvmId !== undefined ? `EVVM ID: ${golden.evvmId}` : 'Loading...'}
+              {golden.evvmId !== undefined && golden.evvmId !== null ? `EVVM ID: ${golden.evvmId.toString()}` : 'Loading...'}
               <br />
-              {golden.paymentNonce !== undefined ? `Nonce: ${golden.paymentNonce}` : 'Loading...'}
+              {golden.paymentNonce !== undefined && golden.paymentNonce !== null ? `Nonce: ${golden.paymentNonce.toString()}` : 'Loading...'}
             </div>
           </div>
 
@@ -267,6 +301,34 @@ export const GoldenStaking = () => {
             </div>
             <div className="stat-desc">
               {golden.isStaker ? 'Golden fisher bot ready' : 'Stake to activate'}
+            </div>
+          </div>
+        </div>
+
+        {/* Debug Info Alert */}
+        <div className="alert alert-info">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            className="stroke-current shrink-0 w-6 h-6"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            ></path>
+          </svg>
+          <div className="text-xs">
+            <p className="font-bold">Debug Info (Check browser console F12 for details):</p>
+            <div className="grid grid-cols-2 gap-1 mt-1">
+              <div>EVVM ID: {golden.evvmId !== undefined && golden.evvmId !== null ? golden.evvmId.toString() : '❌ Loading...'}</div>
+              <div>Nonce: {golden.paymentNonce !== undefined && golden.paymentNonce !== null ? golden.paymentNonce.toString() : '❌ Loading...'}</div>
+              <div>Loading ID: {golden.isLoadingEvvmId ? '⏳ Yes' : '✓ No'}</div>
+              <div>Loading Nonce: {golden.isLoadingPaymentNonce ? '⏳ Yes' : '✓ No'}</div>
+              <div>Error ID: {golden.isEvvmIdError ? '❌ Yes' : '✓ No'}</div>
+              <div>Error Nonce: {golden.isPaymentNonceError ? '❌ Yes' : '✓ No'}</div>
             </div>
           </div>
         </div>
@@ -316,8 +378,10 @@ export const GoldenStaking = () => {
               golden.isConfirming ||
               golden.isLoadingEvvmId ||
               golden.isLoadingPaymentNonce ||
-              !golden.evvmId ||
-              !golden.paymentNonce
+              golden.evvmId === undefined ||
+              golden.evvmId === null ||
+              golden.paymentNonce === undefined ||
+              golden.paymentNonce === null
             }
           >
             {golden.isLoadingEvvmId || golden.isLoadingPaymentNonce ? (
@@ -400,7 +464,7 @@ export const GoldenStaking = () => {
           </div>
         )}
 
-        {/* Error Message */}
+        {/* Error Messages */}
         {golden.executeError && (
           <div className="alert alert-error">
             <svg
@@ -419,6 +483,34 @@ export const GoldenStaking = () => {
             <div className="flex flex-col">
               <span className="font-bold">Transaction failed</span>
               <span className="text-xs">{golden.executeError.message}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Contract Data Loading Errors */}
+        {(golden.isEvvmIdError || golden.isPaymentNonceError) && (
+          <div className="alert alert-error">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="stroke-current shrink-0 h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <div className="flex flex-col">
+              <span className="font-bold">Contract data loading error</span>
+              {golden.isEvvmIdError && (
+                <span className="text-xs">EVVM ID: {golden.evvmIdError?.message || 'Unknown error'}</span>
+              )}
+              {golden.isPaymentNonceError && (
+                <span className="text-xs">Payment Nonce: {golden.paymentNonceError?.message || 'Unknown error'}</span>
+              )}
             </div>
           </div>
         )}

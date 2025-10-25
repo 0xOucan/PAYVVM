@@ -145,7 +145,12 @@ export function useGoldenStaking() {
   });
 
   // Get EVVM ID
-  const { data: evvmId, isLoading: isLoadingEvvmId } = useReadContract({
+  const {
+    data: evvmId,
+    isLoading: isLoadingEvvmId,
+    error: evvmIdError,
+    isError: isEvvmIdError
+  } = useReadContract({
     address: EVVM_ADDRESS,
     abi: [
       {
@@ -164,7 +169,12 @@ export function useGoldenStaking() {
   });
 
   // Get current sync nonce for payment signature
-  const { data: paymentNonce, isLoading: isLoadingPaymentNonce } = useReadContract({
+  const {
+    data: paymentNonce,
+    isLoading: isLoadingPaymentNonce,
+    error: paymentNonceError,
+    isError: isPaymentNonceError
+  } = useReadContract({
     address: EVVM_ADDRESS,
     abi: EVVM_ABI,
     functionName: 'getNextCurrentSyncNonce',
@@ -181,21 +191,43 @@ export function useGoldenStaking() {
 
   // Debug logging (only on client side)
   useEffect(() => {
-    if (address && goldenFisherAddress) {
-      console.log('🔍 Golden Fisher Check:', {
-        connectedAddress: address,
-        goldenFisherAddress: goldenFisherAddress,
-        normalizedConnected: getAddress(address),
-        normalizedGolden: getAddress(goldenFisherAddress as string),
-        addressesMatch: getAddress(address) === getAddress(goldenFisherAddress as string),
-        isGoldenFisher,
-        evvmId: evvmId?.toString(),
-        paymentNonce: paymentNonce?.toString(),
-        isLoadingEvvmId,
-        isLoadingPaymentNonce,
-      });
-    }
-  }, [address, goldenFisherAddress, isGoldenFisher, evvmId, paymentNonce, isLoadingEvvmId, isLoadingPaymentNonce]);
+    console.log('🔍 Golden Fisher Hook Debug:', {
+      // Address info
+      connectedAddress: address,
+      goldenFisherAddress: goldenFisherAddress,
+      isGoldenFisher,
+
+      // EVVM ID
+      evvmId: evvmId?.toString(),
+      evvmIdRaw: evvmId,
+      isLoadingEvvmId,
+      isEvvmIdError,
+      evvmIdError: evvmIdError?.message,
+
+      // Payment Nonce
+      paymentNonce: paymentNonce?.toString(),
+      paymentNonceRaw: paymentNonce,
+      isLoadingPaymentNonce,
+      isPaymentNonceError,
+      paymentNonceError: paymentNonceError?.message,
+
+      // Contract addresses
+      EVVM_ADDRESS,
+      STAKING_ADDRESS,
+    });
+  }, [
+    address,
+    goldenFisherAddress,
+    isGoldenFisher,
+    evvmId,
+    paymentNonce,
+    isLoadingEvvmId,
+    isLoadingPaymentNonce,
+    isEvvmIdError,
+    evvmIdError,
+    isPaymentNonceError,
+    paymentNonceError,
+  ]);
 
   // Execute golden staking
   const {
@@ -214,7 +246,7 @@ export function useGoldenStaking() {
    * But still needs signature for the internal EVVM payment
    */
   const initiateGoldenStaking = async (amount: string, isStakingMode: boolean = true) => {
-    if (!address || !paymentNonce || evvmId === undefined) {
+    if (!address || paymentNonce === undefined || paymentNonce === null || evvmId === undefined || evvmId === null) {
       throw new Error('Wallet not connected or contract data not loaded');
     }
 
@@ -223,19 +255,38 @@ export function useGoldenStaking() {
     }
 
     try {
-      const amountWei = parseUnits(amount, 18);
+      // IMPORTANT: User enters MATE amount, but contract needs staking tokens
+      // 1 staking token = 5083 MATE
+      // amountOfStaking = integer number of staking tokens (no decimals!)
+      // payment amount = amountOfStaking × PRICE_OF_STAKING (contract does this multiplication)
+      const amountMate = parseUnits(amount, 18); // MATE with 18 decimals
+      const PRICE_OF_STAKING = 5083n * (10n ** 18n); // 5083 MATE per staking token
+
+      // Calculate how many staking tokens and actual MATE payment amount
+      const stakingTokens = amountMate / PRICE_OF_STAKING; // Integer division
+      const actualPaymentAmount = stakingTokens * PRICE_OF_STAKING; // Exact amount contract will charge
 
       // Construct payment message for signature
-      // Format: evvmID,from,to,token,amount,priorityFee,nonce,priorityFlag
-      const message = `${evvmId},${address},${STAKING_ADDRESS},${MATE_TOKEN},${amountWei},0,${paymentNonce},false`;
+      // Format: {evvmID},pay,{receiver},{token},{amount},{priorityFee},{nonce},{priorityFlag},{executor}
+      // IMPORTANT: All addresses must be lowercase for signature verification
+      // The payment signature must be for the ACTUAL amount the contract will charge
+      const formattedReceiver = STAKING_ADDRESS.toLowerCase();
+      const formattedToken = MATE_TOKEN.toLowerCase();
+      const formattedExecutor = STAKING_ADDRESS.toLowerCase();
+      const message = `${evvmId},pay,${formattedReceiver},${formattedToken},${actualPaymentAmount},0,${paymentNonce},false,${formattedExecutor}`;
 
       console.log('📝 Requesting payment signature for golden staking:', {
         evvmId: evvmId.toString(),
         from: address,
-        to: STAKING_ADDRESS,
-        token: MATE_TOKEN,
-        amount: amountWei.toString(),
+        userEnteredMate: amount,
+        stakingTokens: stakingTokens.toString(),
+        actualPaymentAmount: actualPaymentAmount.toString(),
+        receiver: formattedReceiver,
+        token: formattedToken,
+        priorityFee: '0',
         nonce: paymentNonce.toString(),
+        priorityFlag: 'false',
+        executor: formattedExecutor,
         message,
       });
 
@@ -260,9 +311,16 @@ export function useGoldenStaking() {
     }
 
     try {
-      const amountWei = parseUnits(pendingAmount, 18);
+      // Calculate staking tokens from MATE amount
+      const amountMate = parseUnits(pendingAmount, 18);
+      const PRICE_OF_STAKING = 5083n * (10n ** 18n);
+      const stakingTokens = amountMate / PRICE_OF_STAKING; // Integer number of staking tokens
 
-      console.log('🎣 Executing golden staking with signature');
+      console.log('🎣 Executing golden staking:', {
+        userEnteredMate: pendingAmount,
+        stakingTokens: stakingTokens.toString(),
+        isStaking: pendingMode,
+      });
 
       writeContract({
         address: STAKING_ADDRESS,
@@ -270,7 +328,7 @@ export function useGoldenStaking() {
         functionName: 'goldenStaking',
         args: [
           pendingMode, // isStaking
-          amountWei, // amountOfStaking
+          stakingTokens, // amountOfStaking (integer number of staking tokens, NO decimals)
           paymentSignature, // signature_EVVM (signed payment)
         ],
       });
@@ -342,6 +400,10 @@ export function useGoldenStaking() {
 
     // Errors
     executeError,
+    evvmIdError,
+    isEvvmIdError,
+    paymentNonceError,
+    isPaymentNonceError,
 
     // Actions
     initiateGoldenStaking,

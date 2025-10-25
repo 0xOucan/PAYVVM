@@ -72,6 +72,38 @@ Seamless PYUSD token deposits and withdrawals with intuitive two-step approval f
 
 Includes real-time balance tracking and automatic allowance detection.
 
+### 🎣 Fisher Network System
+Become a network participant and earn MATE rewards by executing gasless payments:
+
+**What is a Fisher?**
+- Fishers monitor the mempool for signed payment messages
+- Execute transactions on behalf of users (who pay no gas)
+- Earn MATE token rewards + optional priority fees
+- Requires staking MATE tokens to participate (5083 MATE per staking token)
+
+**Staking Types:**
+1. **Public Staking** - Standard staking with dual signature requirement (staking signature + payment signature)
+2. **Golden Fisher** - VIP staking for privileged operators:
+   - ✨ NO staking signature required (instant staking)
+   - ✨ NO staking nonce verification (bypass authentication)
+   - ✨ Payment signature still required (EVVM internal security)
+   - ✨ Priority transaction processing
+   - ✨ Exclusive for authorized operators
+
+**Fisher Dashboard:**
+- Real-time execution tracking (successful/failed)
+- Earnings analytics (MATE earned, gas spent, profit/loss)
+- Success rate monitoring
+- Recent executions history with transaction details
+- Profitability indicators
+
+**Backend Fisher Bot:**
+- Automated mempool monitoring
+- Transaction execution with optimized gas pricing
+- Nonce management and synchronization
+- Error handling and retry logic
+- Performance logging
+
 ### 📊 Real-Time State Monitoring
 Live EVVM system metrics without indexer dependency:
 - Total Supply tracking
@@ -286,6 +318,36 @@ The PAYVVM Explorer page combines all features in a unified interface:
 - Current nonce (transaction counter)
 - Direct Etherscan link
 
+### Fishing Dashboard (`/fishing`)
+The Fisher Network interface for staking and monitoring:
+
+**1. Become a Fisher (Public Staking)**
+- Stake MATE tokens to become a network fisher
+- Real-time MATE balance display
+- Staked amount tracking with staking token conversion
+- Fisher status indicator (Active/Inactive)
+- Dual signature flow (staking + payment signatures)
+- Advanced options showing nonces and signature details
+- 21-day cooldown for unstaking
+- Automatic state refresh after transactions
+
+**2. Golden Fisher VIP Staking**
+- Exclusive interface for privileged golden fisher operators
+- Instant staking with single payment signature
+- Bypass staking nonce verification
+- Real-time privilege detection and validation
+- VIP badge with exclusive feature list
+- Contract data status monitoring (EVVM ID, nonce)
+- Debug information panel
+
+**3. Fisher Dashboard**
+- **Performance Stats**: Total executions, success rate, MATE earned, profit/loss
+- **Recent Executions Table**: From/To addresses, amounts, fees earned, gas costs, profit per TX
+- **Fisher Bot Setup Instructions**: Step-by-step guide with code examples
+- **Statistics Reset**: Clear historical data option
+- Real-time profitability indicators
+- Transaction-level breakdown with Etherscan links
+
 **7. Transaction History**
 - Last 10,000 blocks of transactions
 - HyperSync-powered instant queries
@@ -357,6 +419,11 @@ envioftpayvvm/
 │   │   │   │   ├── AccountViewer.tsx
 │   │   │   │   └── TransactionHistory.tsx
 │   │   │   │
+│   │   │   ├── fishing/           # Fisher Network UI ⭐
+│   │   │   │   ├── StakeFisher.tsx       # Public staking interface
+│   │   │   │   ├── GoldenStaking.tsx     # Golden fisher VIP staking
+│   │   │   │   └── FisherDashboard.tsx   # Analytics & monitoring
+│   │   │   │
 │   │   │   └── scaffold-eth/     # Scaffold-ETH components
 │   │   │
 │   │   ├── hooks/
@@ -367,7 +434,16 @@ envioftpayvvm/
 │   │   │   │   ├── useMatePayment.ts      # MATE payment & balance
 │   │   │   │   └── useMateFaucet.ts       # MATE faucet claiming
 │   │   │   │
+│   │   │   ├── fishing/           # Fisher Network hooks ⭐
+│   │   │   │   ├── useStakeFisher.ts      # Public staking logic
+│   │   │   │   ├── useGoldenStaking.ts    # Golden fisher staking
+│   │   │   │   └── useFisherStats.ts      # Analytics & performance
+│   │   │   │
 │   │   │   └── scaffold-eth/     # Scaffold-ETH hooks
+│   │   │
+│   │   ├── fishing/                # Backend fisher bot ⭐
+│   │   │   ├── fisher-bot.ts       # Main bot implementation
+│   │   │   └── nonce-manager.ts    # Nonce synchronization
 │   │   │
 │   │   ├── utils/
 │   │   │   ├── hypersync.ts       # HyperSync client ⭐
@@ -555,6 +631,37 @@ NEXT_PUBLIC_ALCHEMY_API_KEY=your_alchemy_key
 6. Withdraw PYUSD
 7. Verify wallet balance increased
 
+**Fisher Staking Flow** (Public):
+1. Navigate to `/fishing`
+2. Ensure sufficient MATE balance (use faucet if needed)
+3. Enter amount of MATE to stake (e.g., 5083 for 1 staking token)
+4. Click "Stake MATE"
+5. Sign staking message in wallet (nonce verification signature)
+6. Wait for payment signature prompt
+7. Sign payment message (MATE transfer signature)
+8. Wait for transaction confirmation
+9. Verify "Fisher Status" shows "✓ Active"
+10. Check staked amount updated
+
+**Golden Fisher Staking Flow** (VIP):
+1. Connect with golden fisher wallet address
+2. Navigate to `/fishing`
+3. Verify "Golden Fisher VIP Staking" card appears
+4. Check Contract Data shows EVVM ID and Nonce loaded
+5. Enter MATE amount (automatically converts to staking tokens)
+6. Click "✨ Golden Stake (Instant)"
+7. Sign payment message ONLY (no staking signature needed!)
+8. Wait for transaction confirmation
+9. Verify staking successful with transaction link
+
+**Fisher Bot Setup** (Backend):
+1. Ensure you're a staker (stake MATE first)
+2. Add private key to `.env`: `FISHER_PRIVATE_KEY=0x...`
+3. Run: `cd packages/nextjs && yarn fisher:start`
+4. Bot monitors mempool for signed payment messages
+5. Executes transactions and earns MATE rewards
+6. View performance in Fisher Dashboard
+
 ---
 
 ## 📚 Documentation
@@ -617,10 +724,17 @@ NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_actual_project_id
 - [x] **Comprehensive documentation** (including MATE features)
 - [x] **Production-ready deployment** config
 
+### 🎣 Fisher System (NEW!)
+
+- [x] **Fisher Staking Interface** - Stake MATE tokens to become a network fisher
+- [x] **Golden Fisher VIP Staking** - Instant staking with no signature required for privileged operators
+- [x] **Fisher Dashboard** - Track executions, rewards, profitability, and performance
+- [x] **Backend Fisher Bot** - Automated mempool monitoring and transaction execution
+- [x] **Earnings Analytics** - Real-time profit/loss tracking with gas cost analysis
+
 ### 🚧 In Progress
 
 - [ ] NameService UI (username registration)
-- [ ] Staking interface (stake/unstake/rewards)
 - [ ] GraphQL query interface for Envio
 - [ ] Advanced transaction filtering
 
