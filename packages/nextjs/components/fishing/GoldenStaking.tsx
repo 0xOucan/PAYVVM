@@ -58,7 +58,7 @@ export const GoldenStaking = () => {
     }
 
     try {
-      await golden.executeGoldenStaking(amount, true);
+      await golden.initiateGoldenStaking(amount, true);
     } catch (error) {
       console.error('Golden staking error:', error);
     }
@@ -87,7 +87,7 @@ export const GoldenStaking = () => {
     }
 
     try {
-      await golden.executeGoldenStaking(amount, false);
+      await golden.initiateGoldenStaking(amount, false);
     } catch (error) {
       console.error('Golden unstaking error:', error);
     }

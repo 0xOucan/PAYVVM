@@ -4,8 +4,8 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
-import { parseUnits, getAddress } from 'viem';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useSignMessage } from 'wagmi';
+import { parseUnits, getAddress, hashMessage } from 'viem';
 
 // Contract addresses
 const STAKING_ADDRESS = '0x64A47d84dE05B9Efda4F63Fbca2Fc8cEb96E6816' as const;
@@ -41,7 +41,7 @@ const STAKING_ABI = [
   },
 ] as const;
 
-// EVVM ABI for balance
+// EVVM ABI for balance and nonce
 const EVVM_ABI = [
   {
     name: 'isAddressStaker',
@@ -60,6 +60,13 @@ const EVVM_ABI = [
     ],
     outputs: [{ type: 'uint256' }],
   },
+  {
+    name: 'getNextCurrentSyncNonce',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'user', type: 'address' }],
+    outputs: [{ type: 'uint256' }],
+  },
 ] as const;
 
 /**
@@ -67,6 +74,8 @@ const EVVM_ABI = [
  */
 export function useGoldenStaking() {
   const { address } = useAccount();
+  const [pendingAmount, setPendingAmount] = useState<string | null>(null);
+  const [pendingMode, setPendingMode] = useState<boolean>(true);
 
   // Get golden fisher address from staking contract
   const { data: goldenFisherAddress, isLoading: isLoadingGoldenFisher } = useReadContract({
@@ -149,6 +158,35 @@ export function useGoldenStaking() {
     },
   });
 
+  // Get EVVM ID
+  const { data: evvmId } = useReadContract({
+    address: EVVM_ADDRESS,
+    abi: [
+      {
+        name: 'id',
+        type: 'function',
+        stateMutability: 'view',
+        inputs: [],
+        outputs: [{ type: 'uint256' }],
+      },
+    ] as const,
+    functionName: 'id',
+  });
+
+  // Get current sync nonce for payment signature
+  const { data: paymentNonce } = useReadContract({
+    address: EVVM_ADDRESS,
+    abi: EVVM_ABI,
+    functionName: 'getNextCurrentSyncNonce',
+    args: address ? [address] : undefined,
+    query: {
+      enabled: !!address,
+    },
+  });
+
+  // Sign payment message
+  const { signMessage, data: paymentSignature, reset: resetSignature } = useSignMessage();
+
   // Execute golden staking
   const {
     writeContract,
@@ -161,13 +199,13 @@ export function useGoldenStaking() {
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
   /**
-   * Execute golden staking
-   * No signature verification required - Golden Fisher privilege!
-   * But signature must still be 65 bytes (r=32, s=32, v=1) for length validation
+   * Initiate golden staking by requesting payment signature
+   * Golden Fisher bypasses staking nonce verification
+   * But still needs signature for the internal EVVM payment
    */
-  const executeGoldenStaking = async (amount: string, isStakingMode: boolean = true) => {
-    if (!address) {
-      throw new Error('Wallet not connected');
+  const initiateGoldenStaking = async (amount: string, isStakingMode: boolean = true) => {
+    if (!address || !paymentNonce || evvmId === undefined) {
+      throw new Error('Wallet not connected or contract data not loaded');
     }
 
     if (!isGoldenFisher) {
@@ -177,26 +215,71 @@ export function useGoldenStaking() {
     try {
       const amountWei = parseUnits(amount, 18);
 
-      // Create a dummy 65-byte signature (not validated for golden fisher)
-      // Format: r (32 bytes) + s (32 bytes) + v (1 byte) = 65 bytes = 130 hex chars
-      // Using zeros for r and s, and 27 (0x1b) for v
-      const dummySignature = '0x' + '0'.repeat(128) + '1b' as `0x${string}`;
+      // Construct payment message for signature
+      // Format: evvmID,from,to,token,amount,priorityFee,nonce,priorityFlag
+      const message = `${evvmId},${address},${STAKING_ADDRESS},${MATE_TOKEN},${amountWei},0,${paymentNonce},false`;
+
+      console.log('📝 Requesting payment signature for golden staking:', {
+        evvmId: evvmId.toString(),
+        from: address,
+        to: STAKING_ADDRESS,
+        token: MATE_TOKEN,
+        amount: amountWei.toString(),
+        nonce: paymentNonce.toString(),
+        message,
+      });
+
+      // Store pending operation
+      setPendingAmount(amount);
+      setPendingMode(isStakingMode);
+
+      // Request signature from user
+      signMessage({ message });
+    } catch (err) {
+      console.error('Golden staking initiation error:', err);
+      throw err;
+    }
+  };
+
+  /**
+   * Execute golden staking after signature is obtained
+   */
+  const executeGoldenStaking = () => {
+    if (!address || !paymentSignature || !pendingAmount) {
+      return;
+    }
+
+    try {
+      const amountWei = parseUnits(pendingAmount, 18);
+
+      console.log('🎣 Executing golden staking with signature');
 
       writeContract({
         address: STAKING_ADDRESS,
         abi: STAKING_ABI,
         functionName: 'goldenStaking',
         args: [
-          isStakingMode, // isStaking
+          pendingMode, // isStaking
           amountWei, // amountOfStaking
-          dummySignature, // signature_EVVM (65 bytes - required format but not verified!)
+          paymentSignature, // signature_EVVM (signed payment)
         ],
       });
+
+      // Reset pending state
+      setPendingAmount(null);
+      resetSignature();
     } catch (err) {
       console.error('Golden staking execution error:', err);
       throw err;
     }
   };
+
+  // Auto-execute after signature
+  useEffect(() => {
+    if (paymentSignature && pendingAmount && !hash && !isExecuting) {
+      executeGoldenStaking();
+    }
+  }, [paymentSignature]);
 
   // Refetch data after successful staking
   useEffect(() => {
@@ -229,6 +312,7 @@ export function useGoldenStaking() {
     stakedAmount: stakedAmount || 0n,
     isStaker: isStaker || false,
     mateBalance: mateBalance || 0n,
+    paymentSignature,
 
     // Formatted values
     stakedFormatted: stakedAmount ? (Number(stakedAmount) / 1e18).toFixed(4) : '0',
@@ -246,6 +330,7 @@ export function useGoldenStaking() {
     executeError,
 
     // Actions
+    initiateGoldenStaking,
     executeGoldenStaking,
     reset: resetExecute,
     refetchStakedAmount,
