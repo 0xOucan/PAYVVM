@@ -162,7 +162,8 @@ export function useGoldenStaking() {
 
   /**
    * Execute golden staking
-   * No signature required - Golden Fisher privilege!
+   * No signature verification required - Golden Fisher privilege!
+   * But signature must still be 65 bytes (r=32, s=32, v=1) for length validation
    */
   const executeGoldenStaking = async (amount: string, isStakingMode: boolean = true) => {
     if (!address) {
@@ -176,6 +177,11 @@ export function useGoldenStaking() {
     try {
       const amountWei = parseUnits(amount, 18);
 
+      // Create a dummy 65-byte signature (not validated for golden fisher)
+      // Format: r (32 bytes) + s (32 bytes) + v (1 byte) = 65 bytes = 130 hex chars
+      // Using zeros for r and s, and 27 (0x1b) for v
+      const dummySignature = '0x' + '0'.repeat(128) + '1b' as `0x${string}`;
+
       writeContract({
         address: STAKING_ADDRESS,
         abi: STAKING_ABI,
@@ -183,7 +189,7 @@ export function useGoldenStaking() {
         args: [
           isStakingMode, // isStaking
           amountWei, // amountOfStaking
-          '0x', // signature_EVVM (empty - not needed for golden fisher!)
+          dummySignature, // signature_EVVM (65 bytes - required format but not verified!)
         ],
       });
     } catch (err) {
