@@ -115,9 +115,13 @@ export function useGoldenStaking() {
         normalizedGolden: getAddress(goldenFisherAddress as string),
         addressesMatch: getAddress(address) === getAddress(goldenFisherAddress as string),
         isGoldenFisher,
+        evvmId: evvmId?.toString(),
+        paymentNonce: paymentNonce?.toString(),
+        isLoadingEvvmId,
+        isLoadingPaymentNonce,
       });
     }
-  }, [address, goldenFisherAddress, isGoldenFisher]);
+  }, [address, goldenFisherAddress, isGoldenFisher, evvmId, paymentNonce, isLoadingEvvmId, isLoadingPaymentNonce]);
 
   // Get staked amount
   const { data: stakedAmount, isLoading: isLoadingStakedAmount, refetch: refetchStakedAmount } = useReadContract({
@@ -159,7 +163,7 @@ export function useGoldenStaking() {
   });
 
   // Get EVVM ID
-  const { data: evvmId } = useReadContract({
+  const { data: evvmId, isLoading: isLoadingEvvmId } = useReadContract({
     address: EVVM_ADDRESS,
     abi: [
       {
@@ -171,16 +175,22 @@ export function useGoldenStaking() {
       },
     ] as const,
     functionName: 'id',
+    query: {
+      refetchOnWindowFocus: true,
+      staleTime: 0,
+    },
   });
 
   // Get current sync nonce for payment signature
-  const { data: paymentNonce } = useReadContract({
+  const { data: paymentNonce, isLoading: isLoadingPaymentNonce } = useReadContract({
     address: EVVM_ADDRESS,
     abi: EVVM_ABI,
     functionName: 'getNextCurrentSyncNonce',
     args: address ? [address] : undefined,
     query: {
       enabled: !!address,
+      refetchOnWindowFocus: true,
+      staleTime: 0,
     },
   });
 
@@ -313,6 +323,8 @@ export function useGoldenStaking() {
     isStaker: isStaker || false,
     mateBalance: mateBalance || 0n,
     paymentSignature,
+    evvmId,
+    paymentNonce,
 
     // Formatted values
     stakedFormatted: stakedAmount ? (Number(stakedAmount) / 1e18).toFixed(4) : '0',
@@ -325,6 +337,8 @@ export function useGoldenStaking() {
     isLoadingStakedAmount,
     isLoadingStakerStatus,
     isLoadingMateBalance,
+    isLoadingEvvmId,
+    isLoadingPaymentNonce,
 
     // Errors
     executeError,

@@ -207,7 +207,7 @@ export const GoldenStaking = () => {
         </div>
 
         {/* Status Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           {/* MATE Balance */}
           <div className="stat bg-white/90 rounded-lg">
             <div className="stat-title">MATE Balance</div>
@@ -233,6 +233,23 @@ export const GoldenStaking = () => {
             </div>
             <div className="stat-desc">
               ≈ {(parseFloat(golden.stakedFormatted) / MATE_PER_STAKING_TOKEN).toFixed(4)} staking tokens
+            </div>
+          </div>
+
+          {/* Contract Data Status */}
+          <div className="stat bg-white/90 rounded-lg">
+            <div className="stat-title">Contract Data</div>
+            <div className="stat-value text-sm">
+              {golden.isLoadingEvvmId || golden.isLoadingPaymentNonce ? (
+                <span className="loading loading-spinner loading-sm"></span>
+              ) : (
+                <span className="text-success">✓ Ready</span>
+              )}
+            </div>
+            <div className="stat-desc text-xs">
+              {golden.evvmId !== undefined ? `EVVM ID: ${golden.evvmId}` : 'Loading...'}
+              <br />
+              {golden.paymentNonce !== undefined ? `Nonce: ${golden.paymentNonce}` : 'Loading...'}
             </div>
           </div>
 
@@ -296,10 +313,19 @@ export const GoldenStaking = () => {
               !amount ||
               parseFloat(amount) <= 0 ||
               golden.isExecuting ||
-              golden.isConfirming
+              golden.isConfirming ||
+              golden.isLoadingEvvmId ||
+              golden.isLoadingPaymentNonce ||
+              !golden.evvmId ||
+              !golden.paymentNonce
             }
           >
-            {golden.isExecuting || golden.isConfirming ? (
+            {golden.isLoadingEvvmId || golden.isLoadingPaymentNonce ? (
+              <>
+                <span className="loading loading-spinner loading-sm"></span>
+                Loading contract data...
+              </>
+            ) : golden.isExecuting || golden.isConfirming ? (
               <>
                 <span className="loading loading-spinner loading-sm"></span>
                 {golden.isExecuting ? 'Staking...' : 'Confirming...'}
