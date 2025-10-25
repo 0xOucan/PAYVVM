@@ -23,9 +23,10 @@ Send PYUSD tokens within the EVVM ecosystem **without paying gas fees**. Users s
 
 **How it works:**
 - Sign a payment message with your wallet (no gas required)
-- Message includes recipient, amount, and nonce
-- Contract verifies signature and executes payment
+- Message auto-submits to fishing pool API
+- Fisher bot polls API and executes transaction
 - Complete abstraction of blockchain complexity from users
+- Fisher pays gas, earns optional priority fees
 
 ### 🎰 MATE Token Faucet & Payments
 Claim and send MATE tokens (EVVM's native protocol token) for username registration, priority fees, and network services.
@@ -37,11 +38,15 @@ Claim and send MATE tokens (EVVM's native protocol token) for username registrat
 - More than enough for username registration (500 MATE required)
 - Unlimited claims on testnet for development
 
-**Payment Features:**
+**Gasless Payment Features:**
+- ✨ **NEW**: Fishing pool integration for MATE payments
 - Gasless MATE payments using EIP-191 signatures
-- Send MATE to any address within EVVM
+- Auto-submit to fishing pool after signing
+- Send MATE to any address without ETH for gas
 - Real-time balance display (18 decimal precision)
 - Priority fee options for faster execution
+- Perfect for username registration (500 MATE)
+- Fisher network executes transactions on your behalf
 - Auto-refresh after successful transactions
 
 ### 🚀 HyperSync-Powered Transaction History
@@ -99,10 +104,12 @@ Become a network participant and earn MATE rewards by executing gasless payments
 
 **Fishing Pool System:**
 - Users sign payment messages locally (EIP-191 signatures)
+- Supports both PYUSD (6 decimals) and MATE (18 decimals) tokens
 - Signed messages submitted to fishing pool API
 - Fisher bot polls API for pending signed messages
 - Fisher executes transactions on-chain (pays gas)
 - Complete gasless experience for end users
+- Automatic token detection and processing
 
 **Backend Fisher Bot:**
 - Automated fishing pool monitoring
@@ -531,16 +538,25 @@ envioftpayvvm/
 {EvvmID},pay,{recipient},{token},{amount},{priorityFee},{nonce},{priorityFlag},{executor}
 ```
 
-**Example Message**:
+**Example Messages**:
 ```
-1000,pay,0xalice...,0xpyusd...,2000000,0,42,false,0x0...0
+# PYUSD Payment (6 decimals)
+1000,pay,0xalice...,0xCaC524...,2000000,0,42,false,0x0...0
+
+# MATE Payment (18 decimals)
+1000,pay,0xalice...,0x0000...0001,500000000000000000000,0,42,false,0x0...0
 ```
+
+**Supported Tokens**:
+- ✅ PYUSD (6 decimals) - Stablecoin payments
+- ✅ MATE (18 decimals) - Native protocol token
 
 **Benefits**:
 - No gas fees for users
 - Fast execution by network participants
 - Optional priority fees for urgent transactions
 - Replay protection via nonces
+- Automatic token detection and handling
 
 ### 2. HyperSync Transaction History
 
