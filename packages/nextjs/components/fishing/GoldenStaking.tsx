@@ -13,6 +13,14 @@ export const GoldenStaking = () => {
 
   const golden = useGoldenStaking();
 
+  // Debug logging
+  console.log('🎣 GoldenStaking Component:', {
+    address,
+    goldenFisherAddress: golden.goldenFisherAddress,
+    isGoldenFisher: golden.isGoldenFisher,
+    isLoadingGoldenFisher: golden.isLoadingGoldenFisher,
+  });
+
   // Reset form after success
   useEffect(() => {
     if (golden.isSuccess) {
@@ -96,6 +104,21 @@ export const GoldenStaking = () => {
     );
   }
 
+  // Show loading state while checking golden fisher
+  if (golden.isLoadingGoldenFisher) {
+    return (
+      <div className="card bg-gradient-to-r from-warning to-amber-500 shadow-xl">
+        <div className="card-body">
+          <h2 className="card-title text-2xl text-white">👑 Golden Fisher</h2>
+          <div className="alert bg-white/90">
+            <span className="loading loading-spinner loading-md"></span>
+            <span>Checking golden fisher status...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!golden.isGoldenFisher) {
     return (
       <div className="card bg-gradient-to-r from-warning to-amber-500 shadow-xl">
@@ -117,12 +140,16 @@ export const GoldenStaking = () => {
             </svg>
             <div>
               <div className="font-bold">Connected wallet is not the Golden Fisher</div>
-              <div className="text-xs">
-                Golden Fisher: {golden.goldenFisherAddress?.slice(0, 10)}...
-                {golden.goldenFisherAddress?.slice(-8)}
+              <div className="text-xs mt-2">
+                <div>Golden Fisher:</div>
+                <div className="font-mono text-[10px]">{golden.goldenFisherAddress}</div>
               </div>
-              <div className="text-xs">
-                Your address: {address?.slice(0, 10)}...{address?.slice(-8)}
+              <div className="text-xs mt-1">
+                <div>Your address:</div>
+                <div className="font-mono text-[10px]">{address}</div>
+              </div>
+              <div className="text-xs mt-2 opacity-60">
+                Check browser console for debug information
               </div>
             </div>
           </div>

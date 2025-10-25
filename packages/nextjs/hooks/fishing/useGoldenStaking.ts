@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
-import { parseUnits } from 'viem';
+import { parseUnits, getAddress } from 'viem';
 
 // Contract addresses
 const STAKING_ADDRESS = '0x64A47d84dE05B9Efda4F63Fbca2Fc8cEb96E6816' as const;
@@ -68,16 +68,44 @@ const EVVM_ABI = [
 export function useGoldenStaking() {
   const { address } = useAccount();
 
-  // Get golden fisher address
-  const { data: goldenFisherAddress } = useReadContract({
+  // Get golden fisher address from staking contract
+  const { data: goldenFisherAddress, isLoading: isLoadingGoldenFisher } = useReadContract({
     address: STAKING_ADDRESS,
     abi: STAKING_ABI,
     functionName: 'goldenFisher',
+    query: {
+      refetchOnWindowFocus: true,
+      staleTime: 0,
+    },
   });
 
   // Check if connected address is golden fisher
-  const isGoldenFisher = address && goldenFisherAddress &&
-    address.toLowerCase() === goldenFisherAddress.toLowerCase();
+  // Normalize both addresses using getAddress and compare
+  const isGoldenFisher = (() => {
+    try {
+      if (!address || !goldenFisherAddress) return false;
+
+      // Normalize both addresses to checksummed format
+      const normalizedConnected = getAddress(address);
+      const normalizedGolden = getAddress(goldenFisherAddress as string);
+
+      return normalizedConnected === normalizedGolden;
+    } catch (error) {
+      console.error('Error comparing addresses:', error);
+      return false;
+    }
+  })();
+
+  // Debug logging
+  if (address && goldenFisherAddress) {
+    console.log('🔍 Golden Fisher Check:', {
+      connectedAddress: address,
+      goldenFisherAddress: goldenFisherAddress,
+      normalizedConnected: getAddress(address),
+      normalizedGolden: getAddress(goldenFisherAddress as string),
+      isGoldenFisher,
+    });
+  }
 
   // Get staked amount
   const { data: stakedAmount, isLoading: isLoadingStakedAmount, refetch: refetchStakedAmount } = useReadContract({
@@ -183,8 +211,9 @@ export function useGoldenStaking() {
 
   return {
     // Golden Fisher Status
-    isGoldenFisher: isGoldenFisher || false,
+    isGoldenFisher: Boolean(isGoldenFisher),
     goldenFisherAddress,
+    isLoadingGoldenFisher,
 
     // State
     hash,
