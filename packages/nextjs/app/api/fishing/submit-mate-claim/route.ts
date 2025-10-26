@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 const pendingMateClaims: Array<{
   id: string;
   timestamp: number;
-  mateclaimer: string;
+  claimer: string;
   nonce: string;
   signature: string;
   evvmId?: string;
@@ -40,10 +40,10 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const { mateclaimer, nonce, signature, evvmId } = body;
+    const { claimer, nonce, signature, evvmId } = body;
 
     // Validate required fields
-    if (!mateclaimer || !nonce || !signature) {
+    if (!claimer || !nonce || !signature) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -60,13 +60,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate unique ID
-    const id = `${mateclaimer}-${nonce}-${Date.now()}`;
+    const id = `${claimer}-${nonce}-${Date.now()}`;
 
     // Add to pending pool
     const mateclaim = {
       id,
       timestamp: Date.now(),
-      mateclaimer,
+      claimer,
       nonce,
       signature,
       evvmId,
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     pendingMateClaims.push(mateclaim);
 
     console.log(`📝 New faucet mateclaim submitted to fishing pool: ${id}`);
-    console.log(`   MateClaimer: ${mateclaimer}`);
+    console.log(`   Claimer: ${claimer}`);
     console.log(`   Nonce: ${nonce}`);
     console.log(`   Pending count: ${pendingMateClaims.filter(c => !c.executed).length}`);
 
