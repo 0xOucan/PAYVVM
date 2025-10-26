@@ -18,6 +18,30 @@ PAYVVM Explorer is a production-ready decentralized application that enables **g
 
 ## 🎯 Key Features
 
+### 🚰 EVVM Faucet Services (NEW!)
+Get free testnet tokens through gasless faucet services! No gas fees required - just sign and claim.
+
+**PYUSD Faucet** - `0x74F7A28aF1241cfBeC7c6DBf5e585Afc18832a9a`
+- ✅ Claim 1 PYUSD every 24 hours
+- ✅ Gasless claiming via EIP-191 signatures
+- ✅ Fisher network executes claims for you
+- ✅ Perfect for testing PYUSD payments
+- ✅ [Verified on Etherscan](https://sepolia.etherscan.io/address/0x74F7A28aF1241cfBeC7c6DBf5e585Afc18832a9a)
+
+**MATE Faucet** - `0x068E9091e430786133439258C4BeeD696939405e`
+- ✅ Claim 510 MATE tokens every 24 hours
+- ✅ Gasless claiming via EIP-191 signatures
+- ✅ Enough for username registration + priority fees
+- ✅ Fisher network executes claims for you
+- ✅ [Verified on Etherscan](https://sepolia.etherscan.io/address/0x068E9091e430786133439258C4BeeD696939405e)
+
+**How Faucets Work:**
+1. Sign claim message with your wallet (no gas required)
+2. Signature auto-submits to fishing pool API
+3. Fisher bot polls API and executes your claim
+4. Receive tokens directly to your EVVM balance
+5. 24-hour cooldown between claims
+
 ### 💸 Gasless PYUSD Payments
 Send PYUSD tokens within the EVVM ecosystem **without paying gas fees**. Users sign payment messages (EIP-191), and network participants (fishers) execute them on-chain, earning optional priority fees.
 
@@ -604,6 +628,8 @@ Real-time State (RPC)  +  Historical Data (HyperSync)  +  Indexed Events (Envio)
 | **Treasury** | `0x3D6cB29a1F97a2CFf7a48af96F7ED3A02F6aA38E` | [View →](https://sepolia.etherscan.io/address/0x3D6cB29a1F97a2CFf7a48af96F7ED3A02F6aA38E) |
 | **PYUSD Token** | `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9` | [View →](https://sepolia.etherscan.io/token/0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9) |
 | **MATE Token** | `0x0000000000000000000000000000000000000001` | Protocol Constant (Native EVVM Token) |
+| **PYUSD Faucet** 🚰 | `0x74F7A28aF1241cfBeC7c6DBf5e585Afc18832a9a` | [View →](https://sepolia.etherscan.io/address/0x74F7A28aF1241cfBeC7c6DBf5e585Afc18832a9a) |
+| **MATE Faucet** 🚰 | `0x068E9091e430786133439258C4BeeD696939405e` | [View →](https://sepolia.etherscan.io/address/0x068E9091e430786133439258C4BeeD696939405e) |
 
 **EVVM Registry**: ID #1000 (First Public EVVM Instance!)
 View at: https://www.evvm.info/evvms/1000
