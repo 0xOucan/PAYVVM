@@ -9,4 +9,4 @@
 	url = https://github.com/gnsps/solidity-bytes-utils
 [submodule "PAYVVM"]
 	path = PAYVVM
-	url = https://github.com/EVVM-org/Testnet-Contracts
+	url = git@github.com:0xOucan/payvvm-contracts.git
