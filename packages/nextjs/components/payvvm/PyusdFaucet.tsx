@@ -29,6 +29,7 @@ export const PyusdFaucet = () => {
         setClaiming(false);
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [faucet.signature]);
 
   const handleClaim = async () => {
