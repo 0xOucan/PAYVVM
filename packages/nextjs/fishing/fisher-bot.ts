@@ -394,8 +394,8 @@ class FisherBot {
         }
       }
     } catch (error) {
-      // Silently fail if API is not available (dev server might not be running)
-      if (error instanceof Error && !error.message.includes('ECONNREFUSED')) {
+      // Silently fail if API is not available (dev server might not be running or connection issues)
+      if (error instanceof Error && !error.message.includes('ECONNREFUSED') && !error.message.includes('ECONNRESET')) {
         console.error('Error fetching faucet claims:', error);
       }
     }
@@ -489,8 +489,8 @@ class FisherBot {
         }
       }
     } catch (error) {
-      // Silently fail if API is not available
-      if (error instanceof Error && !error.message.includes('ECONNREFUSED')) {
+      // Silently fail if API is not available (dev server might not be running or connection issues)
+      if (error instanceof Error && !error.message.includes('ECONNREFUSED') && !error.message.includes('ECONNRESET')) {
         console.error('Error fetching MATE faucet claims:', error);
       }
     }
