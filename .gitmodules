@@ -7,3 +7,6 @@
 [submodule "packages/foundry/lib/solidity-bytes-utils"]
 	path = packages/foundry/lib/solidity-bytes-utils
 	url = https://github.com/gnsps/solidity-bytes-utils
+[submodule "PAYVVM"]
+	path = PAYVVM
+	url = https://github.com/EVVM-org/Testnet-Contracts

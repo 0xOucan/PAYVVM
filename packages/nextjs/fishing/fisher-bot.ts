@@ -19,6 +19,8 @@ dotenv.config();
 // Contract addresses
 const EVVM_ADDRESS = '0x9486f6C9d28ECdd95aba5bfa6188Bbc104d89C3e' as const;
 const STAKING_ADDRESS = '0x64A47d84dE05B9Efda4F63Fbca2Fc8cEb96E6816' as const;
+const PYUSD_FAUCET_ADDRESS = '0x74F7A28aF1241cfBeC7c6DBf5e585Afc18832a9a' as const;
+const MATE_FAUCET_ADDRESS = '0x068E9091e430786133439258C4BeeD696939405e' as const;
 
 // EVVM ABI
 const EVVM_ABI = [
@@ -67,6 +69,36 @@ const STAKING_ABI = [
     stateMutability: 'view',
     inputs: [],
     outputs: [{ type: 'address' }],
+  },
+] as const;
+
+// PYUSD Faucet ABI
+const PYUSD_FAUCET_ABI = [
+  {
+    name: 'claimPyusd',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'claimer', type: 'address' },
+      { name: 'nonce', type: 'uint256' },
+      { name: 'signature', type: 'bytes' },
+    ],
+    outputs: [],
+  },
+] as const;
+
+// MATE Faucet ABI
+const MATE_FAUCET_ABI = [
+  {
+    name: 'claimMate',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'claimer', type: 'address' },
+      { name: 'nonce', type: 'uint256' },
+      { name: 'signature', type: 'bytes' },
+    ],
+    outputs: [],
   },
 ] as const;
 
@@ -211,7 +243,9 @@ class FisherBot {
    */
   async monitorFishingPool() {
     console.log('👀 Monitoring fishing pool for signed payment messages...\n');
-    console.log('   API endpoint: http://localhost:3000/api/fishing/submit\n');
+    console.log('   Payment API: http://localhost:3000/api/fishing/submit');
+    console.log('   PYUSD Faucet API: http://localhost:3000/api/fishing/submit-claim');
+    console.log('   MATE Faucet API: http://localhost:3000/api/fishing/submit-mate-claim\n');
 
     // Handle graceful shutdown
     process.on('SIGINT', () => {
@@ -224,6 +258,8 @@ class FisherBot {
     setInterval(async () => {
       try {
         await this.checkFishingPool();
+        await this.checkFaucetClaims();
+        await this.checkMateFaucetClaims();
       } catch (error) {
         console.error('Error checking fishing pool:', error);
       }
@@ -334,6 +370,196 @@ class FisherBot {
       this.stats.total++;
     } finally {
       this.processingTxs.delete(txId);
+    }
+  }
+
+  /**
+   * Check faucet claims API for pending claims
+   */
+  async checkFaucetClaims() {
+    try {
+      const response = await fetch('http://localhost:3000/api/fishing/submit-claim?pending=true&limit=10');
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.claims && data.claims.length > 0) {
+        console.log(`\n💧 Found ${data.claims.length} pending faucet claim(s)`);
+
+        for (const claim of data.claims) {
+          await this.executeFaucetClaim(claim);
+        }
+      }
+    } catch (error) {
+      // Silently fail if API is not available (dev server might not be running)
+      if (error instanceof Error && !error.message.includes('ECONNREFUSED')) {
+        console.error('Error fetching faucet claims:', error);
+      }
+    }
+  }
+
+  /**
+   * Execute a faucet claim from the fishing pool
+   */
+  async executeFaucetClaim(claim: any) {
+    const claimId = `faucet-${claim.claimer}-${claim.nonce}`;
+
+    // Skip if already processing
+    if (this.processingTxs.has(claimId)) {
+      return;
+    }
+
+    this.processingTxs.add(claimId);
+
+    try {
+      console.log('\n💧 Processing faucet claim:');
+      console.log(`   ID: ${claim.id}`);
+      console.log(`   Claimer: ${claim.claimer}`);
+      console.log(`   Nonce: ${claim.nonce}`);
+
+      // Execute the claim
+      const hash = await this.walletClient.writeContract({
+        address: PYUSD_FAUCET_ADDRESS,
+        abi: PYUSD_FAUCET_ABI,
+        functionName: 'claimPyusd',
+        args: [
+          claim.claimer as `0x${string}`,
+          BigInt(claim.nonce),
+          claim.signature as `0x${string}`,
+        ],
+        gas: BigInt(this.gasLimit),
+      });
+
+      console.log(`\n⏳ Faucet claim submitted: ${hash}`);
+      console.log(`   Waiting for confirmation...`);
+
+      // Wait for transaction confirmation
+      const receipt = await this.publicClient.waitForTransactionReceipt({ hash });
+
+      if (receipt.status === 'success') {
+        console.log(`✅ Faucet claim successful!`);
+        console.log(`   Gas used: ${receipt.gasUsed}`);
+        console.log(`   Block: ${receipt.blockNumber}`);
+
+        // Mark as executed in fishing pool
+        await fetch('http://localhost:3000/api/fishing/submit-claim', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: claim.id, txHash: hash }),
+        });
+
+        this.stats.successfulExecutions++;
+      } else {
+        console.log(`❌ Faucet claim failed`);
+        this.stats.failedExecutions++;
+      }
+
+      this.stats.totalExecutions++;
+
+    } catch (error) {
+      console.error(`❌ Error executing faucet claim:`, error);
+      this.stats.failedExecutions++;
+      this.stats.totalExecutions++;
+    } finally {
+      this.processingTxs.delete(claimId);
+    }
+  }
+
+  /**
+   * Check MATE faucet claims API for pending claims
+   */
+  async checkMateFaucetClaims() {
+    try {
+      const response = await fetch('http://localhost:3000/api/fishing/submit-mate-claim?pending=true&limit=10');
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.mateclaims && data.mateclaims.length > 0) {
+        console.log(`\n🍯 Found ${data.mateclaims.length} pending MATE faucet claim(s)`);
+
+        for (const claim of data.mateclaims) {
+          await this.executeMateFaucetClaim(claim);
+        }
+      }
+    } catch (error) {
+      // Silently fail if API is not available
+      if (error instanceof Error && !error.message.includes('ECONNREFUSED')) {
+        console.error('Error fetching MATE faucet claims:', error);
+      }
+    }
+  }
+
+  /**
+   * Execute a MATE faucet claim from the fishing pool
+   */
+  async executeMateFaucetClaim(claim: any) {
+    const claimId = `mate-faucet-${claim.claimer}-${claim.nonce}`;
+
+    // Skip if already processing
+    if (this.processingTxs.has(claimId)) {
+      return;
+    }
+
+    this.processingTxs.add(claimId);
+
+    try {
+      console.log('\n🍯 Processing MATE faucet claim:');
+      console.log(`   ID: ${claim.id}`);
+      console.log(`   Claimer: ${claim.claimer}`);
+      console.log(`   Nonce: ${claim.nonce}`);
+
+      // Execute the claim
+      const hash = await this.walletClient.writeContract({
+        address: MATE_FAUCET_ADDRESS,
+        abi: MATE_FAUCET_ABI,
+        functionName: 'claimMate',
+        args: [
+          claim.claimer as `0x${string}`,
+          BigInt(claim.nonce),
+          claim.signature as `0x${string}`,
+        ],
+        gas: BigInt(this.gasLimit),
+      });
+
+      console.log(`\n⏳ MATE faucet claim submitted: ${hash}`);
+      console.log(`   Waiting for confirmation...`);
+
+      // Wait for transaction confirmation
+      const receipt = await this.publicClient.waitForTransactionReceipt({ hash });
+
+      if (receipt.status === 'success') {
+        console.log(`✅ MATE faucet claim successful!`);
+        console.log(`   Gas used: ${receipt.gasUsed}`);
+        console.log(`   Block: ${receipt.blockNumber}`);
+
+        // Mark as executed in fishing pool
+        await fetch('http://localhost:3000/api/fishing/submit-mate-claim', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: claim.id, txHash: hash }),
+        });
+
+        this.stats.successfulExecutions++;
+      } else {
+        console.log(`❌ MATE faucet claim failed`);
+        this.stats.failedExecutions++;
+      }
+
+      this.stats.totalExecutions++;
+
+    } catch (error) {
+      console.error(`❌ Error executing MATE faucet claim:`, error);
+      this.stats.failedExecutions++;
+      this.stats.totalExecutions++;
+    } finally {
+      this.processingTxs.delete(claimId);
     }
   }
 
