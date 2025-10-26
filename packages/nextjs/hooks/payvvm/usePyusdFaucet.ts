@@ -9,7 +9,7 @@ import { useEvvmId } from './useEvvmState';
 
 // Contract addresses
 const EVVM_ADDRESS = '0x9486f6C9d28ECdd95aba5bfa6188Bbc104d89C3e' as const;
-const PYUSD_FAUCET_ADDRESS = '0x5b73C5498c1E3b4dbA84de0F1833c4a029d90519' as const; // UPDATE after deployment
+const PYUSD_FAUCET_ADDRESS = '0x74F7A28aF1241cfBeC7c6DBf5e585Afc18832a9a' as const;
 const PYUSD_TOKEN = '0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9' as const;
 
 // PYUSD Faucet ABI

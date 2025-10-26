@@ -9,7 +9,7 @@ import { useEvvmId } from './useEvvmState';
 
 // Contract addresses
 const EVVM_ADDRESS = '0x9486f6C9d28ECdd95aba5bfa6188Bbc104d89C3e' as const;
-const MATE_FAUCET_ADDRESS = '0x0000000000000000000000000000000000000000' as const; // UPDATE after deployment
+const MATE_FAUCET_ADDRESS = '0x068E9091e430786133439258C4BeeD696939405e' as const;
 const MATE_TOKEN = '0x0000000000000000000000000000000000000001' as const;
 
 // MATE Faucet ABI
@@ -124,7 +124,7 @@ export function useMateFaucetService() {
     functionName: 'canClaim',
     args: address ? [address] : undefined,
     query: {
-      enabled: !!address && MATE_FAUCET_ADDRESS !== '0x0000000000000000000000000000000000000000',
+      enabled: !!address,
       refetchOnWindowFocus: true,
       staleTime: 0,
     },
@@ -140,7 +140,7 @@ export function useMateFaucetService() {
     abi: FAUCET_ABI,
     functionName: 'getFaucetBalance',
     query: {
-      enabled: MATE_FAUCET_ADDRESS !== '0x0000000000000000000000000000000000000000',
+      enabled: true,
       refetchOnWindowFocus: true,
       staleTime: 0,
     },
@@ -155,7 +155,7 @@ export function useMateFaucetService() {
     abi: FAUCET_ABI,
     functionName: 'claimAmount',
     query: {
-      enabled: MATE_FAUCET_ADDRESS !== '0x0000000000000000000000000000000000000000',
+      enabled: true,
     },
   });
 
@@ -168,7 +168,7 @@ export function useMateFaucetService() {
     abi: FAUCET_ABI,
     functionName: 'cooldownPeriod',
     query: {
-      enabled: MATE_FAUCET_ADDRESS !== '0x0000000000000000000000000000000000000000',
+      enabled: true,
     },
   });
 

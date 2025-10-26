@@ -289,12 +289,12 @@ export const MateFaucetService = () => {
           <div>
             <span className="font-bold">Faucet Contract:</span>{' '}
             <a
-              href="https://sepolia.etherscan.io/address/0x0000000000000000000000000000000000000000"
+              href="https://sepolia.etherscan.io/address/0x068E9091e430786133439258C4BeeD696939405e"
               target="_blank"
               rel="noopener noreferrer"
               className="link link-primary font-mono"
             >
-              Not deployed yet
+              0x068E...405e
             </a>
           </div>
           <div>
