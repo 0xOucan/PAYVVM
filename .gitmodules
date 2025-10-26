@@ -10,3 +10,6 @@
 [submodule "PAYVVM"]
 	path = PAYVVM
 	url = git@github.com:0xOucan/payvvm-contracts.git
+[submodule "payvvm-frontend"]
+	path = payvvm-frontend
+	url = git@github.com:0xOucan/payvvm-frontend.git
