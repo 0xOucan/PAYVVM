@@ -73,6 +73,35 @@ Claim and send MATE tokens (EVVM's native protocol token) for username registrat
 - Fisher network executes transactions on your behalf
 - Auto-refresh after successful transactions
 
+### 💼 Payroll & Batch Payments (dispersePay) ⚠️ WIP
+Send PYUSD to multiple recipients in a single gasless transaction using EVVM's `dispersePay()` function.
+
+**Features:**
+- ✨ Multi-recipient PYUSD distribution
+- ✨ Single EIP-191 signature for all payments
+- ✨ CSV import for bulk payroll data
+- ✨ Async nonces for concurrent transactions
+- ✨ Fisher network executes batch on-chain
+
+**Status: Under Investigation**
+
+The `dispersePay` implementation is experiencing `InvalidSignature()` errors despite mathematically valid signatures. Extensive debugging has confirmed:
+- ✅ Signatures are cryptographically valid (off-chain recovery succeeds)
+- ✅ Message construction matches EVVM specification
+- ✅ Hash calculation (SHA256 of ABI-encoded recipients) is correct
+- ✅ Async nonces available (race condition ruled out)
+- ✅ User balance sufficient for distribution
+- ✅ Recipient amounts sum correctly
+
+**Diagnostic Tools** (see `payvvm-frontend/`):
+```bash
+npx tsx analyze-any-tx.ts <tx-hash>          # Analyze transaction
+npx tsx check-async-nonce.ts                  # Check nonce status
+npx tsx simulate-contract-verification.ts     # Verify signature
+```
+
+Issue is under investigation with EVVM team. See [payvvm-frontend README](https://github.com/0xOucan/payvvm-frontend) and [PAYVVM contracts README](https://github.com/0xOucan/payvvm-contracts) for detailed technical analysis.
+
 ### 🚀 HyperSync-Powered Transaction History
 Query transaction history **2000x faster** than traditional RPC using [Envio HyperSync](https://docs.envio.dev/docs/HyperSync). No event logs required - works directly with transaction data.
 
